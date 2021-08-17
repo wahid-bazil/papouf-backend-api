@@ -29,7 +29,7 @@ class test (models.Model):
 
 class Product (models.Model):
     status = models.ForeignKey(ItemStatus,on_delete=models.SET_NULL ,null=True ,blank=True)
-    title=models.CharField(max_length=30)
+    title=models.CharField(max_length=35)
     inventory=models.IntegerField()
     created=models.DateTimeField(default=timezone.now)
     active=models.BooleanField(default=True)
