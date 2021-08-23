@@ -80,7 +80,7 @@ class PackCategory(models.Model):
         # print(self.child.all())
         for first_child in self.children.all():
             all_children.append(first_child)
-            all_children.extend(first_child.get_children())
+            all_children.extend(first_child.get__all_children())
         return all_children
 
 
