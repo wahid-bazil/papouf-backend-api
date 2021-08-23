@@ -27,12 +27,13 @@ from rest_framework.generics import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.exceptions import NotAcceptable, NotFound, ValidationError, PermissionDenied
-from users.models import GuestUsers, NewUser
+from users.models import Address, GuestUsers, NewUser
 from rest_framework.views import APIView
 from .serializers import OrderSerializer  # UserCheckoutSerializer
 from cart.models import Cart
-
-
+from delivery.models import *
+from users.models import Address
+#from payment.models import *
 """class UserCheckout(CreateAPIView):
     
     serializer_class=UserCheckoutSerializer
@@ -51,21 +52,26 @@ class OrderList(ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         try:
-            delivery_mode = str(request.data['delivery_mode'])
-            payment_mode = str(request.data['payment_mode'])
+            user=self.request.user
+            address = get_object_or_404(Address , user=user )
+            shipping_mode = str(request.data['shipping_mode'])
+            total = str(request.data['total'])
+            delay = int(request.data['delay'])
+            cost = int(request.data['cost'])
+            #payment_mode = str(request.data['payment_mode'])
 
         except:
             pass
 
         cart = Cart.objects.filter(user=self.request.user, active=True).first()
-        #delivery_mode = get_object_or_404(Delivery_Mode,  pk=delivery_mode)
-        #payment_mode = get_object_or_404(Payment_Mode, pk=payment_mode)
-        if payment_mode == "CashOnDelivery":
+        delivery_mode = get_object_or_404(ShippingMode, title="Livraison Standart")
+        payment_mode ="Paiement à la livraison"
+        if payment_mode == "Paiement à la livraison":
             is_paid = False
         else:
             is_paid = True
-        Order.objects.create(user=self.request.user, cart=cart,
-                             delivery_mode=delivery_mode, payment_mode=payment_mode)
+        Order.objects.create(user=self.request.user,shipping_address=address, cart=cart,
+                             delivery_mode=delivery_mode, payment_mode=payment_mode,is_paid=is_paid,order_total=total ,delay=delay ,cost=cost)
         return Response(status.HTTP_201_CREATED)
 
 class OrderDetail(RetrieveAPIView):

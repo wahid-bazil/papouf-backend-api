@@ -62,7 +62,7 @@ pre_save.connect(cart_item_post_save_receiver, sender=CartItem)
 class Cart(models.Model):
 	active=models.BooleanField(default=True)
 	user = models.ForeignKey(
-		    settings.AUTH_USER_MODEL, on_delete=models.CASCADE,null=True)
+		    settings.AUTH_USER_MODEL, on_delete=models.CASCADE,null=True , blank=True)
 	timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
 	updated = models.DateTimeField(auto_now_add=False, auto_now=True)
 	subtotal = models.DecimalField(max_digits=50, decimal_places=2, default=0.00)
@@ -98,10 +98,7 @@ post_save.connect(cart_item_post_save_receiver, sender=CartItem)
 
 
 
-@receiver(post_save, sender=NewUser)
-def user_is_created(sender,instance,created,**kwargs):
-    if created:
-        Cart.objects.create(user=instance)
+
 
 @receiver(post_save, sender=GuestUsers)
 def user_is_created(sender,instance,created,**kwargs):

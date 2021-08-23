@@ -1,4 +1,5 @@
 from decimal import Decimal
+from delivery.models import ShippingMode
 #from delivery.models import Delivery_Mode
 
 
@@ -65,12 +66,16 @@ class Order(models.Model):
     created=models.DateTimeField(default=timezone.now)
     cart = models.ForeignKey(Cart,on_delete=models.CASCADE)
     user = models.ForeignKey(NewUser,on_delete=models.CASCADE)
-    #delivery_mode = models.ForeignKey(Delivery_Mode,on_delete=models.CASCADE,null=True)
+    delivery_mode = models.ForeignKey(ShippingMode,on_delete=models.CASCADE,null=True)
     shipping_address = models.ForeignKey(Address,on_delete=models.CASCADE, related_name='shipping_address' ,blank=True ,null=True)
     shipping_total_price = models.DecimalField(max_digits=50, decimal_places=2, default=5.99,blank=True)
     order_total = models.DecimalField(max_digits=50, decimal_places=2, blank=True)
     is_paid = models.BooleanField(default=False)
-    #payment_mode = models.ForeignKey(Payment_Mode,on_delete=models.CASCADE,null=True)
+    payment_mode = models.CharField(max_length=150)
+    delay = models.PositiveIntegerField(blank=True , null=True)
+    cost = models.IntegerField(blank=True , null=True)
+
+
 
 	
 
@@ -95,15 +100,15 @@ class Order(models.Model):
 		return False
 """
 
-def order_pre_save(sender, instance, *args, **kwargs):
+"""def order_pre_save(sender, instance, *args, **kwargs):
     shipping_total_price = instance.delivery_mode.shipping_total_price
     instance.shipping_total_price = shipping_total_price
     cart_total = instance.cart.subtotal
     order_total = Decimal(shipping_total_price) + Decimal(cart_total)
     instance.order_total = order_total
-    
+"""    
 
-pre_save.connect(order_pre_save, sender=Order)
+#pre_save.connect(order_pre_save, sender=Order)
 
 # #if status == "refunded":
 # 	braintree refud

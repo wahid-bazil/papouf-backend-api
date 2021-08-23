@@ -51,12 +51,12 @@ class ImagesCartitemList(generics.ListAPIView):
             return queryset
         else:
             try:
-                device_id = str(self.request.COOKIES['device_id'])
+                  device_id = str(self.request.headers['deviceid'])
             except:
                 raise NotFound({"detail": "user not found"})
             guestuser, created = GuestUsers.objects.get_or_create(
                 device_id=device_id)
-            queryset = CartItem.objects.filter(cart__device_id=guestuser)
+            queryset = CartItem.objects.filter(cart__device_id=guestuser ,cart__active=True)
             return queryset
     serializer_class = ImagesCartItemSerializer
 
@@ -70,11 +70,12 @@ class ImagesArticleList(generics.ListAPIView):
     queryset = Article.objects.all()
     serializer_class = ImagesArticleSerializer
 
-"""
+
 class ImagesArticleCategoryDetails(generics.RetrieveAPIView):
     queryset = ArticleCategory.objects.all()
     serializer_class = ImagesArticleCategorySerializer
-"""
+    lookup_field = 'title'
+
 class ImagesArticleChildrenList(generics.RetrieveAPIView):
     queryset = Article.objects.all()
     def retrieve(self, request, *args, **kwargs):

@@ -13,6 +13,7 @@ from customization.serializers import CustomPackSerializer,CustomPack
 
 
 class CartItemSerializer(serializers.ModelSerializer):
+    cartitem_id =serializers.SerializerMethodField()
     item = GenericRelatedField({
         Pack: PackSerializer(),
         Product: ProductSerializer(),
@@ -22,7 +23,10 @@ class CartItemSerializer(serializers.ModelSerializer):
     })
     class Meta:
             model = CartItem
-            fields = ['id','quantity','item','total']
+            fields = ['cartitem_id','quantity','item','total']
+    
+    def get_cartitem_id(self,obj):
+        return obj.id
 
 
 class CartItemUpdateSerializer(serializers.ModelSerializer):

@@ -49,10 +49,10 @@ urlpatterns = [
     path('api/variation/', include("categories.urls")),
     path('api/images/', include("media.urls")),
     path('api/order/', include("orders.urls")),
-    #path('api/delivery/', include("delivery.urls")),
+    path('api/delivery/', include("delivery.urls")),
     path('api-auth/', include('rest_framework.urls')),
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     

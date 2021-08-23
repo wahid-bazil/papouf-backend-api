@@ -23,17 +23,15 @@ class CustomUserSerializer(serializers.ModelSerializer):
     name = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True )
     password = serializers.CharField(min_length=8, write_only=True)
-    
-
     class Meta:
         model = NewUser
-        fields = ('email', 'name','phone_number', 'password')
+        fields = ('email', 'name','phone_number', 'password' )
         extra_kwargs = {'password': {'write_only': True}}
 
 
     def create(self, validated_data):
+        device_id = validated_data.pop('device_id', None)
         password = validated_data.pop('password', None)
-        
         instance = self.Meta.model(**validated_data)
         if NewUser.objects.filter(email=validated_data.pop('email',None)):
             raise serializers.ValidationError({'email':'This email is elready exited'})
@@ -152,7 +150,7 @@ class UserSerializer(serializers.ModelSerializer):
     address_details = AddressSerializer(read_only=True ,)
     class Meta:
         model = NewUser
-        fields = ['email','name','name2','phone_number','address_details']
+        fields = ['email','name','second_name','phone_number','address_details']
         read_only_fields = ['address_details','email']
     def update(self, instance, validated_data):
         validated_data.pop('address_details', None)
@@ -164,7 +162,7 @@ class UserSerializer(serializers.ModelSerializer):
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta :
         model = Address
-        fields = ['name', 'name2','phone_number']
+        fields = ['name', 'second_name','phone_number']
 
 
 class UserUpdateMiniSerializer(serializers.ModelSerializer):

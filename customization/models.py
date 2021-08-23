@@ -17,7 +17,6 @@ def upload_to(instance, filename):
 
     return 'custompacks/{filename}'.format(filename=filename)
 
-
 class CustomPack (models.Model):
     isCopy = models.BooleanField(default=False)
     inCart = models.BooleanField(default=False)
@@ -117,7 +116,11 @@ class CustomPackSetting(models.Model):
 def CreateCustompack(sender, instance, created, **kwargs):
     if instance.item._meta.verbose_name == 'custompack':
         if created:
-            CustomPack.objects.create(user=instance.item.user)
+            if instance.item.user :
+                CustomPack.objects.create(user=instance.item.user)
+            else :
+                CustomPack.objects.create(device_id=instance.item.device_id)
+
 
    
 
@@ -172,3 +175,5 @@ def customized_product_is_created(sender, update_fields, instance, created, **kw
 def user_is_created(sender, instance, created, **kwargs):
     if created:
         CustomPack.objects.create(device_id=instance)
+
+

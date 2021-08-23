@@ -13,7 +13,7 @@ urlpatterns = [
     #Pack
     #path('pack', ImagesPackList.as_view()),
     path('pack/<int:pk>', ImagesPacktDetail.as_view()),
-    path('pack/category-products/<str:title>', ImagesPackCategoryDetails.as_view()),
+    path('pack/category-items/<str:title>', ImagesPackCategoryDetails.as_view()),
     path('pack/filter-products/<str:title>', ImagesPacktFilterDetails.as_view()),
     
   
@@ -26,7 +26,7 @@ urlpatterns = [
     path("cartitems",ImagesCartitemList.as_view()),
     path("boxe",ImagesBoxeList.as_view()),
     path("article",ImagesBoxeList.as_view()),
-    #path("article/<str:pk>",ImagesArticleCategoryDetails.as_view()),
+    path("article/<str:title>",ImagesArticleCategoryDetails.as_view()),
     path("article-childen/<int:pk>",ImagesArticleChildrenList.as_view()),
     path("boxe/<int:pk>",ImagesBoxeDetail.as_view()),
     path("custompack",ImagesCustomPackList.as_view()),

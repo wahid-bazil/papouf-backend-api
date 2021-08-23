@@ -29,29 +29,16 @@ from media.serializers import ImagesCartItemSerializer
 
 
 class CartDetail(RetrieveUpdateAPIView):
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            user = self.request.user
-            queryset = Cart.objects.filter(user=user)
-            return queryset
-        else:
-            try:
-                device_id = str(self.request.headers['deviceid'])
-            except:
-                raise NotFound({"detail":"user not found"})
-            guestuser ,created=GuestUsers.objects.get_or_create(device_id=device_id)
-            queryset = Cart.objects.filter(device_id=guestuser)
-            return queryset
     def get_object(self):
         if self.request.user.is_authenticated:
-           
             user = self.request.user
             obj = get_object_or_404(Cart,user=user,active=True)
+            
             return obj
         else:
+           
             try:
-               
-               
+                
                 device_id = self.request.headers['deviceid']
                 print(device_id)
             except:
@@ -59,7 +46,6 @@ class CartDetail(RetrieveUpdateAPIView):
             guestuser ,created=GuestUsers.objects.get_or_create(device_id=device_id)
             obj = get_object_or_404(Cart,device_id=guestuser ,active=True)
             return obj
-        
     serializer_class = CartSerializer
 
 

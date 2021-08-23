@@ -22,7 +22,6 @@ def deleteCopyPack(user):
     custompacks = CustomPack.objects.filter(user=user, isCopy=True)
     cartitems = CartItem.objects.filter(
         cart__active=True, cart__user=user, content_type__model='custompack')
-    print(custompacks, cartitems)
 
 
 class test(APIView):
@@ -113,7 +112,6 @@ class CustomPackList(generics.ListCreateAPIView):
             return queryset
         else:
             try:
-                print(self.request.headers['deviceid'])
                 device_id = str(self.request.headers['deviceid'])
             except:
                 raise NotFound({"detail": "user not found"})
@@ -209,7 +207,6 @@ class TemporaryCustomPackList(generics.ListCreateAPIView):
 class CustomPackDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomPack.objects.all()
     serializer_class = CustomPackSerializer
-
     def get_object(self):
         if self.request.user.is_authenticated:
             user = self.request.user
@@ -223,15 +220,24 @@ class CustomPackDetail(generics.RetrieveUpdateDestroyAPIView):
                 raise NotFound({"detail": "user not found"})
             guestuser, created = GuestUsers.objects.get_or_create(
                 device_id=device_id)
-            obj = CustomPack.objects.filter(device_id=guestuser,isCopy=False, inCart=False).first()
+            
+            obj = CustomPack.objects.filter(
+                device_id=guestuser, isCopy=False, inCart=False).first()
+            
             return obj
 
     def update(self, request, *args, **kwargs):
-        pack = self.get_object()
+        pack_id = self.request.data['pack_id']
+        if pack_id :
+            pack = get_object_or_404(CustomPack,pk=pack_id)
+        else:
+            pack = self.get_object()
+        print('the pack', pack)
         boxe = get_object_or_404(Boxe, pk=self.request.data['boxe_id'])
+        print('ttttt', boxe)
         pack.boxe = boxe
         pack.save()
-        print(pack)
+        print(pack.boxe)
         serializer = CustomPackSerializer(pack)
         return Response(serializer.data, status=status.HTTP_200_OK)
 

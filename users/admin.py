@@ -7,13 +7,13 @@ from django.forms import TextInput, Textarea
 
 class UserAdminConfig(UserAdmin):
     model = NewUser
-    search_fields = ('email', 'name', 'name2','phone_number')
-    list_filter = ('email', 'name', 'name2','phone_number', 'is_active', 'is_staff')
+    search_fields = ('email', 'name', 'second_name','phone_number')
+    list_filter = ('email', 'name', 'second_name','phone_number', 'is_active', 'is_staff')
     ordering = ('-start_date',)
-    list_display = ('email', 'name', 'name2','phone_number',
+    list_display = ('email', 'name', 'second_name','phone_number',
                     'is_active', 'is_staff')
     fieldsets = (
-        (None, {'fields': ('email', 'name', 'name2','phone_number')}),
+        (None, {'fields': ('email', 'name', 'second_name','phone_number')}),
         ('Permissions', {'fields': ('is_staff', 'is_active')}),
         ('Personal', {'fields': ('about',)}),
     )
@@ -23,7 +23,7 @@ class UserAdminConfig(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'name', 'name2','phone_number', 'password1', 'password2', 'is_active', 'is_staff')}
+            'fields': ('email', 'name', 'second_name','phone_number', 'password1', 'password2', 'is_active', 'is_staff')}
          ),
     )
 
