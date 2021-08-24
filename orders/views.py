@@ -46,7 +46,10 @@ from users.models import Address
 
 
 class OrderList(ListCreateAPIView):
-    queryset = Order.objects.all()
+    permission_classes=[IsAuthenticated]
+    def get_queryset(self):
+        queryset = Order.objects.filter(user=self.request.user)
+        return queryset 
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
 
@@ -86,5 +89,6 @@ class OrdersLenght(ListAPIView):
         return queryset
     def list(self, request, *args, **kwargs):
         orders=self.get_queryset()
+        print(orders)
         return Response (len(orders),status=status.HTTP_200_OK)
     

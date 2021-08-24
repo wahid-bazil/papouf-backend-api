@@ -7,14 +7,14 @@ urlpatterns = [
     #Product
     path('product', ImagesProductList.as_view()),
     path('product/<int:pk>', ImagesProductDetail.as_view()),
-    path('product/category-products/<str:title>', ImagesProductCategoryDetails.as_view()),
-    path('product/filter-products/<str:title>', ImagesProductFilterDetails.as_view()),
+    path('product/category-items/<str:title>', ImagesProductCategoryDetails.as_view()),
+    path('product/filter-items/<str:title>', ImagesProductFilterDetails.as_view()),
 
     #Pack
     #path('pack', ImagesPackList.as_view()),
     path('pack/<int:pk>', ImagesPacktDetail.as_view()),
     path('pack/category-items/<str:title>', ImagesPackCategoryDetails.as_view()),
-    path('pack/filter-products/<str:title>', ImagesPacktFilterDetails.as_view()),
+    path('pack/filter-items/<str:title>', ImagesPacktFilterDetails.as_view()),
     
   
 
