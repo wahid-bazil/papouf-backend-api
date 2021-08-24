@@ -100,7 +100,7 @@ class CustomUserCreate(APIView):
             try:
                 device_id = str(self.request.headers['deviceid'])
                 cart = Cart.objects.filter(device_id=device_id, active=True).first()
-                custompack = CustomPack.objects.filter(device_id=device_id).first()
+                custompack = CustomPack.objects.filter(device_id=device_id ,isCopy=False , inCart=False).first()
                 if cart and custompack:
                     cart.user=user
                     custompack.user=user

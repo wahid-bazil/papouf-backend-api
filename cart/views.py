@@ -154,6 +154,16 @@ class CartitemListDelete(RetrieveUpdateDestroyAPIView):
     
 
 
+class CartLenght(ListAPIView):
+    permission_classes =[IsAuthenticated]
+    def get_queryset(self):
+        queryset = CartItem.objects.filter(cart__user=self.request.user ,cart__active=True)
+        return queryset
+    def list(self, request, *args, **kwargs):
+        cartitems=self.get_queryset()
+       
+        return Response (len(cartitems),status=status.HTTP_200_OK)
+
 
 
 

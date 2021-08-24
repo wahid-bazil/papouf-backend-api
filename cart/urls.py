@@ -9,7 +9,7 @@ urlpatterns = [
     path("cartitems",CartitemList.as_view()),
     path("detail",CartDetail.as_view()),
     path("cartitems/<int:pk>",CartitemListDelete.as_view()),
-
+    path("detail/lenght",CartLenght.as_view()),
   
     
     

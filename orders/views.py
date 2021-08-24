@@ -77,3 +77,14 @@ class OrderList(ListCreateAPIView):
 class OrderDetail(RetrieveAPIView):
     queryset= Order.objects.all()
     serializer_class = OrderSerializer
+
+
+class OrdersLenght(ListAPIView):
+    permission_classes =[IsAuthenticated]
+    def get_queryset(self):
+        queryset = Order.objects.filter(user=self.request.user)
+        return queryset
+    def list(self, request, *args, **kwargs):
+        orders=self.get_queryset()
+        return Response (len(orders),status=status.HTTP_200_OK)
+    
