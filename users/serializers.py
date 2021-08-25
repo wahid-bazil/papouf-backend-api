@@ -16,9 +16,6 @@ from cart.models import Cart
 from .models import GuestUsers
 
 class CustomUserSerializer(serializers.ModelSerializer):
-    """
-    Currently unused in preference of the below.
-    """
     email = serializers.EmailField(required=True)
     name = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True )
@@ -68,39 +65,26 @@ class LoginSerializer(serializers.ModelSerializer):
         max_length=68, min_length=6, write_only=True)
     name = serializers.CharField(
         max_length=255, min_length=3, read_only=True)
-
     tokens = serializers.SerializerMethodField()
 
     def get_tokens(self, obj):
         user = NewUser.objects.get(email=obj['email'])
-
         return {
             'refresh': user.tokens()['refresh'],
             'access': user.tokens()['access']
         }
-
     class Meta:
         model = NewUser
         fields = ['email', 'password', 'name', 'tokens','id']
 
     def validate(self, attrs):
-        email = attrs.get('email', '')
-        password = attrs.get('password', '')
-        print(email,password)
+        email = attrs.get('email','')
+        password = attrs.get('password','')
         user = auth.authenticate(email=email, password=password)
         if not user:
             raise serializers.ValidationError({'error':'Invalid credentials, try again'})
         if not user.is_active:
             raise serializers.ValidationError({'error':"your account is not verified "})
-
-        return {
-            'id':user.id,
-            'email': user.email,
-            'name': user.name,
-           
-            'tokens': user.tokens()
-        }
-
         return super().validate(attrs)     
 
 class ResetPasswordEmailRequestSerializer(serializers.Serializer):

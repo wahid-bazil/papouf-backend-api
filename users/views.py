@@ -90,7 +90,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class CustomUserCreate(APIView):
     permission_classes = [AllowAny]
-
     def post(self, request, format='json'):
         serializer = CustomUserSerializer(data=request.data)
         if serializer.is_valid():
@@ -100,22 +99,19 @@ class CustomUserCreate(APIView):
             try:
                 device_id = str(self.request.headers['deviceid'])
                 cart = Cart.objects.filter(device_id=device_id, active=True).first()
-                custompack = CustomPack.objects.filter(device_id=device_id ,isCopy=False , inCart=False).first()
-                if cart and custompack:
+                #custompack = CustomPack.objects.filter(device_id=device_id ,isCopy=False , inCart=False).first()
+                if cart :
                     cart.user=user
-                    custompack.user=user
+                    #custompack.user=user
                     cart.save()
-                    custompack.save()
+                    #custompack.save()
                 else:
                     Cart.objects.create(user=user)
-                    CustomPack.objects.create(user=user)
             except:
                 pass
-        
-            
-        
-            
 
+            tokens=get_tokens_for_user(user)
+        
             """
                 
                 token = get_tokens_for_user(user)['access']
@@ -126,7 +122,7 @@ class CustomUserCreate(APIView):
                 
                 send_mail('Papouf', Subject, 'bazil.wahid1@gmail.com',[user_data['email']], fail_silently=False)
                 """
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(tokens, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

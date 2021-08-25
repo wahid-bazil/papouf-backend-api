@@ -167,6 +167,12 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+AWS_ACCESS_KEY_ID='AKIA44II72VPT6VFGSXR'
+AWS_SECRET_ACCESS_KEY ='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'
+AWS_STORAGE_BUCKET_NAME='papouf-files'
+AWS_QUERYSTRING_AUTH =False
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=10),

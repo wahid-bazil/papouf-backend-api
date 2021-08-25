@@ -171,9 +171,10 @@ def customized_product_is_created(sender, update_fields, instance, created, **kw
 
 
 
-@receiver(post_save, sender=GuestUsers)
+"""@receiver(post_save, sender=GuestUsers)
 def user_is_created(sender, instance, created, **kwargs):
     if created:
         CustomPack.objects.create(device_id=instance)
 
 
+"""

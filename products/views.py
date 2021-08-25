@@ -63,23 +63,18 @@ class ProductList(generics.ListCreateAPIView):
 class CollectionList(APIView):
     def get(self, request, *args, **kwargs):
         status=self.request.query_params.get('status')
-        nbOfproducts=self.request.query_params.get('nbOfproducts')
-        nbOfpacks=self.request.query_params.get('nbOfpacks')
-        if nbOfproducts :
-            nbOfproducts=int(nbOfproducts)
-        if nbOfpacks :
-            nbOfpacks=int(nbOfpacks)
-
-        if status :
-            products=Product.objects.filter(status=status).order_by('-created')[:nbOfproducts]
-            packs = Pack.objects.filter(status=status).order_by('-created')[:nbOfpacks]
-        else :
-            products=Product.objects.all()
-            packs = Pack.objects.all()
-        products_serializer=ProductSerializer(products,many=True)
-        pack_serializers=PackSerializer(packs,many=True)
-        data=pack_serializers.data + products_serializer.data
-        return Response(data)
+        type = self.request.query_params.get('type')
+        nbOfitems=self.request.query_params.get('nbOfitems')
+        print(status,type,nbOfitems)
+        if type == 'product':
+            products=Product.objects.filter(status=status).order_by('-created')[:int(nbOfitems)]
+            serializer=ProductSerializer(products,many=True)
+        else:
+            packs = Pack.objects.filter(status=status).order_by('-created')[:int(nbOfitems)]
+            serializer=PackSerializer(packs,many=True)
+       
+        
+        return Response(serializer.data )
         
 
 class ArticleChildrendList(RetrieveAPIView):

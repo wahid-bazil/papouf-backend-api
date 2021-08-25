@@ -141,25 +141,20 @@ class ImagesProductList(generics.ListAPIView):
 
 
 class ImagesCollectionList(APIView):
-       def get(self, request, *args, **kwargs):
-        status=self.request.query_params.get('status')
-        nbOfproducts=self.request.query_params.get('nbOfproducts')
-        nbOfpacks=self.request.query_params.get('nbOfpacks')
-        if nbOfproducts :
-            nbOfproducts=int(nbOfproducts)
-        if nbOfpacks :
-            nbOfpacks=int(nbOfpacks)
-
-        if status :
-            products=Product.objects.filter(status=status).order_by('-created')[:nbOfproducts]
-            packs = Pack.objects.filter(status=status).order_by('-created')[:nbOfpacks]
-        else :
-            products=Product.objects.all()
-            packs = Pack.objects.all()
-        products_serializer=ImagesProductSerializer(products,many=True ,context={"request":request})
-        pack_serializers=ImagesPackSerializer(packs,many=True ,context={"request":request})
-        data=pack_serializers.data + products_serializer.data
-        return Response(data)
+        def get(self, request, *args, **kwargs):
+            status=self.request.query_params.get('status')
+            type = self.request.query_params.get('type')
+            nbOfitems=self.request.query_params.get('nbOfitems')
+            print(status,type,nbOfitems)
+            if type == 'product':
+                products=Product.objects.filter(status=status).order_by('-created')[:int(nbOfitems)]
+                serializer=ImagesProductSerializer(products,many=True ,context={"request":request})
+            else:
+                packs = Pack.objects.filter(status=status).order_by('-created')[:int(nbOfitems)]
+                serializer=ImagesPackSerializer(packs,many=True ,context={"request":request})
+        
+            
+            return Response(serializer.data )
      
  
 
