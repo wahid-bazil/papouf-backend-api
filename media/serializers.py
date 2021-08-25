@@ -80,7 +80,6 @@ class UserImageCustomPackSerializer(serializers.ModelSerializer):
 
 
 class ImageCustomPackSerializer(serializers.ModelSerializer):
-    
     class Meta:
         model = CustomPackImage
         fields = ["image"]
@@ -100,7 +99,7 @@ class UserImagesCustomPackSerializer(serializers.ModelSerializer):
 class ImagesCustomPackSerializer(serializers.ModelSerializer):
     item_id = serializers.SerializerMethodField()
     item_type = serializers.SerializerMethodField()
-    images = ImageCustomPackSerializer()
+    images = ImageCustomPackSerializer(source="main_image" , many=True)
 
     class Meta:
         model = CustomPack

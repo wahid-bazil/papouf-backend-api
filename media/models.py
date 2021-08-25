@@ -56,7 +56,8 @@ class ArticleImage (models.Model):
 
 
 class CustomPackImage (models.Model):
-    image = models.ImageField(blank=False , null=False  )
+    image = models.ImageField(
+        _("Image"), upload_to=upload_to, default='posts/default.jpg')
     item = models.ForeignKey('customization.CustomPack',on_delete=models.CASCADE ,related_name='main_image')
     class Meta :
         verbose_name = 'custompackimage'
