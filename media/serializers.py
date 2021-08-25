@@ -80,8 +80,7 @@ class UserImageCustomPackSerializer(serializers.ModelSerializer):
 
 
 class ImageCustomPackSerializer(serializers.ModelSerializer):
-    image = serializers.SerializerMethodField()
-
+    
     class Meta:
         model = CustomPackImage
         fields = ["image"]
@@ -101,7 +100,7 @@ class UserImagesCustomPackSerializer(serializers.ModelSerializer):
 class ImagesCustomPackSerializer(serializers.ModelSerializer):
     item_id = serializers.SerializerMethodField()
     item_type = serializers.SerializerMethodField()
-    images = serializers.SerializerMethodField()
+    images = ImageCustomPackSerializer()
 
     class Meta:
         model = CustomPack
@@ -112,10 +111,10 @@ class ImagesCustomPackSerializer(serializers.ModelSerializer):
 
     def get_item_type(self, obj):
         return obj._meta.verbose_name
-    def get_images(self, obj):
+    """def get_images(self, obj):
         request = self.context.get('request')
         boxe_images = obj.boxe.images
-        return ImageBoxeSerializer(boxe_images ,many=True ,context={"request": request}).data
+     return ImageBoxeSerializer(boxe_images ,many=True ,context={"request": request}).data"""
 
 
 class ImagesProductSerializer(serializers.ModelSerializer):
@@ -166,12 +165,13 @@ class ImagesArticleSerializer(serializers.ModelSerializer):
         return obj._meta.verbose_name
 
 
-
 class ImagesArticleCategorySerializer(serializers.ModelSerializer):
     items = ImagesArticleSerializer(many=True)
+
     class Meta:
         model = ArticleCategory
         fields = ['items']
+
 
 """ cart"""
 
@@ -183,6 +183,7 @@ class ImagesCartItemSerializer(serializers.ModelSerializer):
         CustomPack: ImagesCustomPackSerializer(),
         Pack: ImagesPackSerializer()
     }, source="item")
+
     class Meta:
         model = CartItem
         fields = ['cartitem_images', 'cartitem_id']
@@ -294,9 +295,11 @@ class ImagesProductFilterSerializer(serializers.ModelSerializer):
 
 class ImagesPackCategorySerializer(serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
+
     class Meta:
         model = PackCategory
         fields = ['items']
+
     def get_items(self, obj):
         all_child = obj.get__all_children()
         items = []
