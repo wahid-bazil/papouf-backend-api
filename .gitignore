@@ -1,3 +1,4 @@
+.env
 SECRET_KEY = django-insecure-2fmvq)!9kbmv_(8l+=%9#lpow019o81e+w)lstig^lqm713kva
 EMAIL_HOST_PASSWORD=156wahidoss
 EMAIL_HOST_USER=bazil.wahid1@gmail.com
