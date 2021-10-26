@@ -1,3 +1,5 @@
+from django.db.models.query import QuerySet
+from rest_framework import exceptions
 from customization.models import CustomPack
 from delivery.models import ShippingCity
 from django.http import request
@@ -6,19 +8,17 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework import serializers, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import AddressSerializer, CustomUserSerializer, EmailVerificationSerializer, CustomTokenObtainPairSerializer, UserMiniSerializer, UserSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, UserUpdateSerializer
+from .serializers import FirstLoadSerializer, UserContactSerializer, CustomUserSerializer, EmailVerificationSerializer, CustomTokenObtainPairSerializer, UserMiniSerializer, UserDetailsSerializer, ResetPasswordEmailRequestSerializer, SetNewPasswordSerializer, UserUpdateSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AND, AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny
-from .models import Address, NewUser, GuestUsers
-from .serializers import LoginSerializer, UserHistoriqueSerializer, GuestHistoriqueSerializer
-
+from .models import Address, NewUser, GuestUsers, RegistrationConfig
+from .serializers import LoginSerializer,userNumbersMiniSerializer
 from django.contrib.sites.shortcuts import get_current_site
 from django.urls import reverse
 from rest_framework import generics, status, views, permissions
 from django.core.mail import send_mail
-
 import jwt
 from django.conf import settings
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -33,46 +33,28 @@ from cart.models import *
 
 
 
-class AddressDetail(generics.RetrieveUpdateAPIView):
+class UserContactDetail(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
-
     def get_object(self):
-        obj = get_object_or_404(Address, user=self.request.user)
+        obj = get_object_or_404(NewUser, email=self.request.user)
         return obj
-    serializer_class = AddressSerializer
-
-    def update(self, request, *args, **kwargs):
-        user = self.request.user
-        address = self.request.data['address']
-        city = self.request.data['city']
-        city = get_object_or_404(ShippingCity, title=city)
-        user_adress, created = Address.objects.get_or_create(user=user)
-        user_adress.address = address
-        user_adress.city = city
-        user_adress.save()
-        return Response(status.HTTP_200_OK)
+    serializer_class = UserContactSerializer
 
 
-class UserDetail(generics.RetrieveUpdateAPIView):
+class UserDetail(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
-    queryset = NewUser.objects.all()
-    serializer_class = UserSerializer
-
     def get_object(self):
-        if self.request.user.is_authenticated:
-            obj = get_object_or_404(NewUser, email=self.request.user)
-            return obj
+        obj = get_object_or_404(NewUser, email=self.request.user)
+        return obj
+    serializer_class = UserDetailsSerializer
 
 
-class UserMiniDetail(generics.RetrieveUpdateAPIView):
+class UserNumbers(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
-    queryset = NewUser.objects.all()
-    serializer_class = UserMiniSerializer
-
     def get_object(self):
-        if self.request.user.is_authenticated:
-            obj = get_object_or_404(NewUser, email=self.request.user)
-            return obj
+        obj = get_object_or_404(NewUser, email=self.request.user)
+        return obj
+    serializer_class = userNumbersMiniSerializer
 
 
 def get_tokens_for_user(user):
@@ -88,9 +70,41 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
-class CustomUserCreate(APIView):
+class CustomUserCreate(generics.CreateAPIView):
+    queryset = NewUser.objects.all()
     permission_classes = [AllowAny]
-    def post(self, request, format='json'):
+    serializer_class = CustomUserSerializer
+    def perform_create(self, serializer):
+        if serializer.is_valid():
+            user = serializer.save()
+            user_data = serializer.data
+            try:
+                device_id = str(self.request.headers['deviceid'])
+                cart = Cart.objects.get(device_id=device_id, active=True)
+                #custompack = CustomPack.objects.filter(device_id=device_id ,isCopy=False , inCart=False).first()
+                if cart :
+                    cart.user=user
+                    cart.save()
+                else:
+                    Cart.objects.create(user=user)
+            except:
+                Cart.objects.create(user=user)
+            settings = RegistrationConfig.objects.get(is_active=True)
+            if settings.is_email_confirmation:
+                tokens=get_tokens_for_user(user)
+                #current_site = get_current_site(request).domain
+                #relativeLink = reverse('email-verify')
+                absurl = 'http://'+'127.0.0.1:8000/email-verify/'+"?token="+str(tokens['access'])
+                Subject = 'Bonjour  ' + user.name + '\n' 'Vous venez de vous inscrire sur notre site Papouf. Afin d’activer votre compte veuillez appuyer sur le lien suivant. \n'+ absurl
+                send_mail('Papoufdazdadadadazdazz', Subject, 'bazil.wahid1@gmail.com',[user_data['email']], fail_silently=False)
+            else :
+                user.verification_overridden=True
+                user.save()
+
+        
+
+
+    """def post(self, request, format='json'):
         serializer = CustomUserSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -110,10 +124,9 @@ class CustomUserCreate(APIView):
             except:
                 pass
 
-            tokens=get_tokens_for_user(user)
+            
         
-            """
-                
+            
                 token = get_tokens_for_user(user)['access']
                 current_site = get_current_site(request).domain
                 relativeLink = reverse('email-verify')
@@ -121,33 +134,28 @@ class CustomUserCreate(APIView):
                 Subject = 'Bonjour  ' + user.name + '\n' 'Vous venez de vous inscrire sur notre site Papouf. Afin d’activer votre compte veuillez appuyer sur le lien suivant. \n'+ absurl
                 
                 send_mail('Papouf', Subject, 'bazil.wahid1@gmail.com',[user_data['email']], fail_silently=False)
-                """
+                
             return Response(tokens, status=status.HTTP_201_CREATED)
         else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)"""
 
 
 class VerifyEmail(views.APIView):
-
     def get(self, request):
-        token = request.GET.get('token')
-
-        payload = jwt.decode(token, settings.SECRET_KEY)
-        user = NewUser.objects.get(id=payload['user_id'])
-        try:
-            if not user.active:
-                user.active = True
-                user.save()
-                return Response({'email': 'Successfully activated'}, status=status.HTTP_200_OK)
-        except jwt.exceptions.DecodeError as identifier:
-            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+            token = request.GET.get('token')
+            payload = jwt.decode(token, settings.SECRET_KEY)
+            user = NewUser.objects.get(id=payload['user_id'])
+            user.is_active = True
+            user.save()
+            return Response({'email': 'Successfully activated'}, status=status.HTTP_200_OK)
+            """except jwt.exceptions.DecodeError as identifier:
+                return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
         except jwt.ExpiredSignatureError as identifier:
-            return Response({'error': 'Activastion Expired'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Activastion Expired'}, status=status.HTTP_400_BAD_REQUEST)"""
 
 
 class LoginAPIView(generics.GenericAPIView):
     serializer_class = LoginSerializer
-
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid(raise_exception=True):
@@ -206,36 +214,28 @@ class SetNewPasswordAPIView(generics.GenericAPIView):
         return Response({'success': True, 'message': 'Password reset success'}, status=status.HTTP_200_OK)
 
 
-class UserGuestHistorique(generics.RetrieveAPIView):
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            queryset = NewUser.objects.all()
-            return queryset
-        else:
-            queryset = GuestUsers.objects.all()
 
-    def get_serializer_class(self, *args, **kwargs):
-        if self.request.user.is_authenticated:
-            return UserHistoriqueSerializer
-        else:
-            return GuestHistoriqueSerializer
+class FirstLoadView(generics.CreateAPIView):
+    serializer_class = FirstLoadSerializer
+    def create(self, request, *args, **kwargs):
+        try:
+            device_id = self.request.data['device_id']
+            guest =GuestUsers.objects.filter(device_id=device_id).first()
+            if guest:
+                if guest.first_load:
+                    guest.first_load=False
+                    guest.save()
+                    return Response(True)
+                else : 
+                    return Response(False)
+            else :
+                GuestUsers.objects.create(device_id=device_id ,first_load=False)
+                return Response(True)
+        except:
+            raise NotFound()
+        
 
-    def get_object(self):
-        if self.request.user.is_authenticated:
-            print(self.request.user)
-            obj = get_object_or_404(NewUser, email=self.request.user)
-
-        else:
-            try:
-                device_id = str(self.request.COOKIES['device_id'])
-            except:
-                raise NotFound({"detail": "user not found"})
-
-            obj, created = GuestUsers.objects.get_or_create(
-                device_id=device_id)
-
-        return obj
-
+        
 
 """class UserGuestHistorique(generics.RetrieveAPIView):
     queryset = GuestUsers.objects.all()

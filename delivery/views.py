@@ -27,7 +27,7 @@ from media.serializers import ImagesCartItemSerializer
 from .serializers import *
 
 
-class ShippingCityList(generics.ListCreateAPIView):
+class ShippingCityList(generics.ListAPIView):
     queryset = ShippingCity.objects.all()
     serializer_class = ShippingCitySerializer
 
@@ -48,21 +48,22 @@ class ShippingModeList(generics.ListAPIView):
     serializer_class = ShippingModeSerializer
 
 
-class ShippingDelayCost(APIView):
+class ShippingDelayCost(generics.CreateAPIView):
+    serializer_class=ShippingDelayCostSerializer
     def post(self, request, *args, **kwargs):
         city = self.request.data['city']
-        total = self.request.data['total']
+        total = self.request.data['order_total']
         shipping_mode = self.request.data['shipping_mode']
-        print('heeer')
-        #cart = get_object_or_404(Cart, user=self.request.user, active=True)
         city = get_object_or_404(ShippingCity, title=city)
         shipping_mode = get_object_or_404(
-            ShippingMode, title='Livraison Standart')
+            ShippingMode, title=shipping_mode)
         delay_per_hour = ShippingDelay.objects.get(
             cities__in=[city], shipping_mode=shipping_mode).delay_per_hour
         total_order_interval = IntervalOrderToltal.objects.get(
             min_total__lte=total, max_total__gte=total, shipping_mode=shipping_mode)
         shipping_price = ShippingNetPrice.objects.get(
             shipping_mode=shipping_mode, total_order_interval=total_order_interval, cities__in=[city]).net_shipping_price
-       
         return Response({'delay_per_hour': delay_per_hour, 'shipping_price': shipping_price}, status=status.HTTP_200_OK)
+
+
+

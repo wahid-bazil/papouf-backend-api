@@ -29,53 +29,47 @@ from rest_framework import status
 from rest_framework.exceptions import NotAcceptable, NotFound, ValidationError, PermissionDenied
 from users.models import Address, GuestUsers, NewUser
 from rest_framework.views import APIView
-from .serializers import OrderSerializer  # UserCheckoutSerializer
+from .serializers import OrderSerializer   # UserCheckoutSerializer
 from cart.models import Cart
 from delivery.models import *
 from users.models import Address
+from .mixins import MethodSerializerView
 #from payment.models import *
-"""class UserCheckout(CreateAPIView):
-    
-    serializer_class=UserCheckoutSerializer
-    def create(self, request, *args, **kwargs):
-        
-        serializer=UserCheckoutSerializer(user=self.request.user , email=self.request.user)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(status=status.HTTP_201_CREATED)"""
 
 
 class OrderList(ListCreateAPIView):
     permission_classes=[IsAuthenticated]
+    serializer_class=OrderSerializer
     def get_queryset(self):
         queryset = Order.objects.filter(user=self.request.user)
         return queryset 
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
-
-    def create(self, request, *args, **kwargs):
-        try:
-            user=self.request.user
-            address = get_object_or_404(Address , user=user )
-            shipping_mode = str(request.data['shipping_mode'])
-            total = str(request.data['total'])
-            delay = int(request.data['delay'])
-            cost = int(request.data['cost'])
-            #payment_mode = str(request.data['payment_mode'])
-
-        except:
-            pass
-
-        cart = Cart.objects.filter(user=self.request.user, active=True).first()
-        delivery_mode = get_object_or_404(ShippingMode, title="Livraison Standart")
-        payment_mode ="Paiement à la livraison"
-        if payment_mode == "Paiement à la livraison":
-            is_paid = False
-        else:
-            is_paid = True
-        Order.objects.create(user=self.request.user,shipping_address=address, cart=cart,
-                             delivery_mode=delivery_mode, payment_mode=payment_mode,is_paid=is_paid,order_total=total ,delay=delay ,cost=cost)
-        return Response(status.HTTP_201_CREATED)
+    def perform_create(self, serializer):
+        if serializer.is_valid(raise_exception=True):
+            cart = get_object_or_404(Cart ,user=self.request.user ,active=True)
+            for cartitem in cart.cartitems.all():
+                item_id=cartitem.object_id
+                item_type=cartitem.content_type
+                if item_type == 'product':
+                    item = get_object_or_404(Product, pk=item_id)
+                    if cartitem.quantity > item.inventory:
+                        raise NotAcceptable('the quantity of' + item.title +'is more than our inventory')
+                elif item_type == 'pack' :
+                    item = get_object_or_404(Pack, pk=item_id)
+                    if cartitem.quantity > item.inventory:
+                        raise NotAcceptable('the quantity of' + item.title +'is more than our inventory')
+                elif item_type == 'custompack' :
+                    item = get_object_or_404(CustomPack, pk=item_id)
+                    packarticles=item.custompackarticle_set.all()
+                    for packarticle in packarticles:
+                        if packarticle.item.inventory > packarticle.quantity:
+                            raise NotAcceptable('the custom pack' + item.title + 'contains an article with a quantity more than our inventory')
+            serializer.save()
+            cart.active=False
+            cart.save()
+            Cart.objects.create(user=self.request.user)           
+            
+        
 
 class OrderDetail(RetrieveAPIView):
     queryset= Order.objects.all()
@@ -89,6 +83,4 @@ class OrdersLenght(ListAPIView):
         return queryset
     def list(self, request, *args, **kwargs):
         orders=self.get_queryset()
-        print(orders)
         return Response (len(orders),status=status.HTTP_200_OK)
-    

@@ -7,13 +7,13 @@ from cart.views import *
 urlpatterns = [
  
     path("cartitems",CartitemList.as_view()),
-    path("detail",CartDetail.as_view()),
+    path("",CartDetail.as_view()),
+    path("detail/<int:pk>",CartDetails.as_view()),
+
     path("cartitems/<int:pk>",CartitemListDelete.as_view()),
-    path("detail/lenght",CartLenght.as_view()),
+    path("lenght",CartLenght.as_view()),
   
     
-    
-  
     
 ]
 

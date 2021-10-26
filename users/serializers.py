@@ -1,3 +1,6 @@
+
+from delivery.models import ShippingCity
+from django.shortcuts import get_object_or_404
 from delivery.serializers import ShippingCitySerializer
 from re import T
 from django.db import models
@@ -6,24 +9,36 @@ from rest_framework import serializers
 from users.models import Address, NewUser
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib import auth
-from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.exceptions import AuthenticationFailed, NotFound
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import smart_str, force_str, smart_bytes, DjangoUnicodeDecodeError
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from customization.models import CustomPack
 from cart.models import Cart
-from .models import GuestUsers
+from .models import GuestUsers ,RegistrationConfig
+from .mixins import UserNumbers
 
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
 class CustomUserSerializer(serializers.ModelSerializer):
+    token =serializers.SerializerMethodField()
     email = serializers.EmailField(required=True)
     name = serializers.CharField(required=True)
     phone_number = serializers.CharField(required=True )
     password = serializers.CharField(min_length=8, write_only=True)
     class Meta:
         model = NewUser
-        fields = ('email', 'name','phone_number', 'password' )
+        fields = ('email', 'name','phone_number', 'password' , 'token')
         extra_kwargs = {'password': {'write_only': True}}
+    
+    def get_token(self,obj):
+        tokens=get_tokens_for_user(obj)
+        return tokens
 
 
     def create(self, validated_data):
@@ -35,6 +50,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         if password is not None:
             instance.set_password(password)
         instance.save()
+
         return instance
 
 class EmailVerificationSerializer(serializers.ModelSerializer):
@@ -55,37 +71,32 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
 
 
-
-  
-
-
 class LoginSerializer(serializers.ModelSerializer):
+    tokens = serializers.SerializerMethodField()
     email = serializers.EmailField(max_length=255, min_length=3)
     password = serializers.CharField(
         max_length=68, min_length=6, write_only=True)
-    name = serializers.CharField(
-        max_length=255, min_length=3, read_only=True)
-    tokens = serializers.SerializerMethodField()
-
-    def get_tokens(self, obj):
-        user = NewUser.objects.get(email=obj['email'])
-        return {
-            'refresh': user.tokens()['refresh'],
-            'access': user.tokens()['access']
-        }
     class Meta:
         model = NewUser
-        fields = ['email', 'password', 'name', 'tokens','id']
-
+        fields = ['email', 'password','tokens']
+    def get_tokens(self, obj):
+            user = NewUser.objects.get(email=obj['email'])
+            return {
+                'refresh': user.tokens()['refresh'],
+                'access': user.tokens()['access']
+            }
     def validate(self, attrs):
         email = attrs.get('email','')
         password = attrs.get('password','')
         user = auth.authenticate(email=email, password=password)
         if not user:
-            raise serializers.ValidationError({'error':'Invalid credentials, try again'})
-        if not user.is_active:
-            raise serializers.ValidationError({'error':"your account is not verified "})
+            raise serializers.ValidationError({'detail':'Invalid credentzzials, try again'})
+        if not user.is_email_verified and not user.verification_overridden:
+            settings = RegistrationConfig.objects.get(is_active=True)
+            if settings.is_email_confirmation:
+                raise serializers.ValidationError({'detail':"your email is not active "})
         return super().validate(attrs)     
+
 
 class ResetPasswordEmailRequestSerializer(serializers.Serializer):
     email = serializers.EmailField(min_length=2)
@@ -124,29 +135,85 @@ class SetNewPasswordSerializer(serializers.Serializer):
         return super().validate(attrs)
 
 
-class AddressSerializer(serializers.ModelSerializer):
-    city=ShippingCitySerializer()
-    class Meta:
-        model = Address
-        fields = ['address','city']
 
-class UserSerializer(serializers.ModelSerializer):
-    address_details = AddressSerializer(read_only=True ,)
+class AddressSerializer(serializers.ModelSerializer):
+    city = serializers.CharField(max_length=30)
+    class Meta  :
+        model = Address
+        fields = ['city' ,'details']
+
+class UserContactSerializer(serializers.ModelSerializer):
+    address_details =AddressSerializer(required = False)
+    name = serializers.CharField(required = False , max_length=30 , min_length=2)
     class Meta:
         model = NewUser
-        fields = ['email','name','second_name','phone_number','address_details']
-        read_only_fields = ['address_details','email']
+        fields = ['phone_number','address_details' ,'name']
     def update(self, instance, validated_data):
-        validated_data.pop('address_details', None)
-        user=super(UserSerializer, self).update(instance, validated_data)
-        return user
+        if validated_data.get('address_details',None) :
+            address_details = validated_data.get('address_details')
+            city = address_details['city']
+            try :
+                print(city)
+                city =ShippingCity.objects.get(slug=city )
+                print(city)
+            except :
+                raise NotFound(detail='This city is not in our delivery list')
+            details =address_details['details']
+            address=get_object_or_404(Address , user=instance)
+            address.city=city
+            address.details=details
+            address.save()
+        if validated_data.get('phone_number', None):
+            instance.phone_number = validated_data.get('phone_number')
+            instance.save()
+        if validated_data.get('name', None):
+            instance.name = validated_data.get('name')
+            instance.save()
+        return instance
+
+class UserDetailsSerializer(serializers.ModelSerializer):
+    address_details = AddressSerializer()
+    class Meta:
+        model = NewUser
+        fields = ['email','name','phone_number','address_details']
+
+
+"""class userNumbersAllSerializer(serializers.ModelSerializer):
+    current_cart=serializers.ModelSerializer()
+    orders_made=serializers.ModelSerializer()
+    orders_in_process=serializers.ModelSerializer()
+    orders_refunded=serializers.ModelSerializer()
+    class Meta:
+        model = NewUser
+        fields=['current_cartitems' , 'orders_made' , 'orders_in_process' , 'orders_refunded' ]
+    def get_current_cart (self,obj):
+        current_cartitems=0
+        try:
+            cart=Cart.objects.get(cart__user=obj.email)
+            current_cartitems = len(cart.cartitems)
+        except:
+            pass
+    """
+class userNumbersMiniSerializer(serializers.ModelSerializer , UserNumbers):
+    nbOf_current_cartitems=serializers.SerializerMethodField()
+    nbOf_orders_in_process=serializers.SerializerMethodField()
+    class Meta:
+        model = NewUser
+        fields=['nbOf_current_cartitems' , 'nbOf_orders_in_process' ]
+    def get_nbOf_current_cartitems(self, obj):
+        return self.get_current_cartitems(obj)
+    def get_nbOf_orders_in_process(self,obj):
+        return self.get_orders_made(obj)
+       
+        
+
 
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     class Meta :
         model = Address
-        fields = ['name', 'second_name','phone_number']
+        fields = ['name','phone_number']
 
 
 class UserUpdateMiniSerializer(serializers.ModelSerializer):
@@ -173,18 +240,8 @@ class CartinfoSerializer(serializers.ModelSerializer):
         model = Cart
         fields =['subtotal']
 
-class UserHistoriqueSerializer(serializers.ModelSerializer):
-    cart_set = CartinfoSerializer(many=True)
-    custompack_set = CustomPackInfoSerializer(many=True)
-    class Meta:
-        model = NewUser
-        fields = ['name','email','cart_set','custompack_set']
 
-
-
-class GuestHistoriqueSerializer(serializers.ModelSerializer):
-    cart_set = CartinfoSerializer(many=True)
-    custompack_set = CustomPackInfoSerializer(many=True)
-    class Meta:
+class FirstLoadSerializer (serializers.ModelSerializer):
+    class Meta : 
         model = GuestUsers
-        fields = ['cart_set','custompack_set']
+        fields = ['device_id']

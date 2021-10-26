@@ -23,16 +23,12 @@ class CartItem(models.Model):
 	quantity = models.PositiveIntegerField(default=1)
 	total = models.DecimalField(max_digits=10, decimal_places=2 ,blank=True)
 
-	
-	
 	def set_itemType(self):
 		self.content_type_label = self.content_type.name
 		
 	def __unicode__(self):
 		return self.item.title
 
-	def remove(self):
-		return self.item.remove_from_cart()
 
 
 def cart_item_pre_save_receiver(sender, instance, *args, **kwargs):
@@ -65,8 +61,7 @@ class Cart(models.Model):
 		    settings.AUTH_USER_MODEL, on_delete=models.CASCADE,null=True , blank=True)
 	timestamp = models.DateTimeField(auto_now_add=True, auto_now=False)
 	updated = models.DateTimeField(auto_now_add=False, auto_now=True)
-	subtotal = models.DecimalField(max_digits=50, decimal_places=2, default=0.00)
-	active = models.BooleanField(default=True)
+	subtotal = models.FloatField(null=True , blank=True)
 	device_id = models.ForeignKey(GuestUsers, on_delete=models.CASCADE, blank=True,null=True)
 
 	class Meta:

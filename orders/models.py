@@ -1,7 +1,9 @@
 from decimal import Decimal
+
+from django.db.models.deletion import SET_NULL
 from delivery.models import ShippingMode
 #from delivery.models import Delivery_Mode
-
+from django.utils.translation import gettext_lazy as _
 
 from django.conf import settings
 from django.utils import timezone
@@ -11,112 +13,78 @@ from django.db.models.signals import pre_save, post_save
 from cart.models import Cart
 from users.models import NewUser,Address
 
-
-
-""""
-class UserCheckout(models.Model):
-	user = models.OneToOneField(settings.AUTH_USER_MODEL,on_delete=models.CASCADE, null=True, blank=True) #not required
-	email = models.EmailField(unique=True)
-	#braintree_id = models.CharField(max_length=120, null=True, blank=True)
-
-"""
-
-"""
-@property
-	def get_braintree_id(self,):
-		instance = self
-		if not instance.braintree_id:
-			result = braintree.Customer.create({
-			    "email": instance.email,
-			})
-			if result.is_success:
-				instance.braintree_id = result.customer.id
-				instance.save()
-		return instance.braintree_id
-	def get_client_token(self):
-		customer_id = self.get_braintree_id
-		if customer_id:
-			client_token = braintree.ClientToken.generate({
-			    "customer_id": customer_id
-			})
-			return client_token
-		return None
-"""
-
-def update_braintree_id(sender, instance, *args, **kwargs):
-	if not instance.braintree_id:
-		instance.get_braintree_id
-
-
-#post_save.connect(update_braintree_id, sender=UserCheckout)
-
+from django.utils.timezone import datetime
+from payment.models import PaymentMode
+from .mixins import send_order_email
 
 
 
 ORDER_STATUS_CHOICES = (
-	('created', 'Created'),
-	('shipping', 'Shipping'),
-	('shipped', 'Shipped'),
-	('refunded', 'Refunded'),
+	('created', 'Préparation pour la livraison'),
+	('shipping', 'En cours de livraison'),
+	('shipped', 'Livrée'),
+	('refunded', 'Retournéé'),
+
 )
 
+class OrderEmail(models.Model):
+    status = models.CharField(max_length=120, choices=ORDER_STATUS_CHOICES, default='created')
+    subject = models.CharField(max_length=30)
+    text =models.TextField(_('subject'), max_length=500, blank=True)
+    
 
 class Order(models.Model):
     status = models.CharField(max_length=120, choices=ORDER_STATUS_CHOICES, default='created')
-    created=models.DateTimeField(default=timezone.now)
-    cart = models.ForeignKey(Cart,on_delete=models.CASCADE)
-    user = models.ForeignKey(NewUser,on_delete=models.CASCADE)
-    delivery_mode = models.ForeignKey(ShippingMode,on_delete=models.CASCADE,null=True)
+    created=models.DateTimeField(default=datetime.now(timezone.utc))
+    cart = models.ForeignKey(Cart,on_delete=models.CASCADE ,null=True, blank=True)
+    user = models.ForeignKey(NewUser,on_delete=models.CASCADE ,null=True, blank=True)
+    shipping_mode = models.ForeignKey(ShippingMode,on_delete=models.CASCADE,null=True, blank=True)
     shipping_address = models.ForeignKey(Address,on_delete=models.CASCADE, related_name='shipping_address' ,blank=True ,null=True)
-    shipping_total_price = models.DecimalField(max_digits=50, decimal_places=2, default=5.99,blank=True)
-    order_total = models.DecimalField(max_digits=50, decimal_places=2, blank=True)
+    shipping_total_price = models.FloatField(null=True, blank=True)
+    shipping_time = models.IntegerField(null=True, blank=True)
+    order_total = models.FloatField(null=True, blank=True)
     is_paid = models.BooleanField(default=False)
-    payment_mode = models.CharField(max_length=150)
-    delay = models.PositiveIntegerField(blank=True , null=True)
-    cost = models.IntegerField(blank=True , null=True)
-
-
-
-	
-
-    """def __unicode__(self):
-	    return "Order_id: %s, Cart_id: %s"%(self.id, self.cart.id)"""
-
+    payment_mode = models.ForeignKey(PaymentMode,on_delete=SET_NULL,null=True, blank=True)
     class Meta:
         ordering = ['-id']
 
-""" 
-    def get_absolute_url(self):
-		return reverse("order_detail", kwargs={"pk": self.pk})
-	def mark_completed(self, order_id=None):
-		self.status = "paid"
-		if order_id and not self.order_id:
-			self.order_id = order_id
-		self.save()
-	@property
-	def is_complete(self):
-		if self.status == "paid":
-			return True
-		return False
+
 """
 
-"""def order_pre_save(sender, instance, *args, **kwargs):
-    shipping_total_price = instance.delivery_mode.shipping_total_price
-    instance.shipping_total_price = shipping_total_price
-    cart_total = instance.cart.subtotal
-    order_total = Decimal(shipping_total_price) + Decimal(cart_total)
-    instance.order_total = order_total
-"""    
-
-#pre_save.connect(order_pre_save, sender=Order)
-
-# #if status == "refunded":
-# 	braintree refud
-# post_save.connect()
-
-
-def order_is_created(sender,instance,created,**kwargs):
+def Order_prost_save_receiver(sender, created, instance, *args, **kwargs):
     if created:
-       instance.cart.is_complete()
-       Cart.objects.create(user=instance.user)
-post_save.connect(order_is_created,sender=Order)
+        ctx = {
+        'order': instance,
+        'msg':  OrderEmail.objects.get(status='created')
+        }
+        
+
+post_save.connect(Order_prost_save_receiver, sender=Order)
+
+
+def Order_pre_save_receiver(sender, instance, *args, **kwargs):
+
+    try :
+        pre_save_instance = Order.objects.get(pk=instance.pk)
+        if pre_save_instance.status == 'created' and instance.status == 'shipping':
+            ctx = {
+            'order': instance,
+            'msg':  OrderEmail.objects.get(status='shipping')
+            }
+            send_order_email(ctx , instance.user.email)
+        elif pre_save_instance.status == 'shipping' and instance.status == 'shipped':
+            ctx = {
+            'order': instance,
+            'msg':  OrderEmail.objects.get(status='shipped')
+            }
+            send_order_email(ctx , instance.user.email)
+        elif pre_save_instance.status == 'shipped' and instance.status == 'refunded':
+            ctx = {
+            'order': instance,
+            'msg':  OrderEmail.objects.get(status='refunded')
+            }
+            send_order_email(ctx , instance.user.email)
+    except:
+        pass
+pre_save.connect(Order_pre_save_receiver, sender=Order)
+"""

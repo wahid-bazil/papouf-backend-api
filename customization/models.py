@@ -27,8 +27,7 @@ class CustomPack (models.Model):
         decimal_places=2, max_digits=20, default=0)
     sale_price = models.DecimalField(
         decimal_places=2, max_digits=20, default=0,)
-    boxe = models.ForeignKey(
-        Boxe, on_delete=models.CASCADE, null=True, blank=True)
+
     created = models.DateTimeField(default=timezone.now)
     items = models.ManyToManyField(Article, through='CustomPackArticle')
     device_id = models.ForeignKey(
@@ -94,7 +93,7 @@ class CustomPackArticle(models.Model):
 
     class Meta :
         verbose_name = 'packarticle'    
-
+    
 
 class CustomPackUserImage(models.Model):
     custompack = models.ForeignKey(
@@ -108,9 +107,12 @@ class CustomPackUserImage(models.Model):
 
 class CustomPackSetting(models.Model):
     is_active = models.BooleanField(default=False)
-    default_boxe = models.ForeignKey(Boxe, on_delete=models.CASCADE)
-    image_sale_price = models.PositiveIntegerField()
+    #default_boxe = models.ForeignKey(Boxe, on_delete=models.CASCADE)
+    image_price = models.PositiveIntegerField()
     maxNb_Of_images = models.PositiveIntegerField()
+
+    def __str__(self) -> str:
+        return "setting" + str(self.id)
 
 @receiver(post_save, sender=CartItem)
 def CreateCustompack(sender, instance, created, **kwargs):
@@ -162,8 +164,6 @@ def CustomPackArticle_post_delete(sender, instance, **kwargs):
 @receiver(post_save, sender=CustomPack)
 def customized_product_is_created(sender, update_fields, instance, created, **kwargs):
     if created and instance.isCopy == False:
-        setting = CustomPackSetting.objects.filter(is_active=True).first()
-        instance.boxe = setting.default_boxe
         #image = instance.boxe.images.filter(for_custompack=True).first().image
         #CustomPackImage.objects.create(item=instance, image=image)
         instance.title = "pack_"+str(instance.id)

@@ -28,21 +28,16 @@ from products.models import Product , Article
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser,FormParser
 from media.serializers import ImagesProductSerializer
+from rest_framework.pagination import PageNumberPagination
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 100
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 
 
 
-class testlist(generics.ListCreateAPIView):
-    def get_queryset(self):
-        print(self.kwargs.get('case'))
-        return test.objects.all()
-    serializer_class = testSerializer
-
-
-
-class testArticle(generics.ListCreateAPIView):
-    queryset=Article.objects.all()
-    serializer_class=testArticleSerializer
 
 class BoxeList(generics.ListCreateAPIView):
     queryset =  Boxe.objects.all()
@@ -60,21 +55,19 @@ class ProductList(generics.ListCreateAPIView):
         return queryset
     serializer_class = ProductSerializer
 
-class CollectionList(APIView):
-    def get(self, request, *args, **kwargs):
-        status=self.request.query_params.get('status')
-        type = self.request.query_params.get('type')
-        nbOfitems=self.request.query_params.get('nbOfitems')
-        print(status,type,nbOfitems)
-        if type == 'product':
-            products=Product.objects.filter(status=status).order_by('-created')[:int(nbOfitems)]
-            serializer=ProductSerializer(products,many=True)
-        else:
-            packs = Pack.objects.filter(status=status).order_by('-created')[:int(nbOfitems)]
-            serializer=PackSerializer(packs,many=True)
-       
-        
-        return Response(serializer.data )
+class FeaturedProductList(generics.ListAPIView):
+    def  get_queryset(self):
+        queryset = Product.objects.filter(status__title="featured")
+        return queryset
+    serializer_class = ProductSerializer
+    pagination_class = StandardResultsSetPagination
+
+class FeaturedPackList(generics.ListAPIView):
+    def  get_queryset(self):
+        queryset = Pack.objects.filter(status__title="featured")
+        return queryset
+    serializer_class = PackSerializer
+    pagination_class = StandardResultsSetPagination 
         
 
 class ArticleChildrendList(RetrieveAPIView):

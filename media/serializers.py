@@ -21,7 +21,6 @@ class ImageProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ['image']
-
     def get_image(self, productimage):
         request = self.context.get('request')
         image = productimage.image.url
@@ -34,22 +33,11 @@ class ImagePackSerializer(serializers.ModelSerializer):
         fields = ['image']
 
 
-class ImageBoxeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BoxeImage
-        fields = ['image']
 
 
-class ImagesBoxeSerializer(serializers.ModelSerializer):
-    images = ImageBoxeSerializer(many=True)
-    boxe_id = serializers.SerializerMethodField()
 
-    class Meta:
-        model = Boxe
-        fields = ['boxe_id', 'images']
 
-    def get_boxe_id(self, obj):
-        return obj.id
+
 
 
 class ImageArticleSerializer(serializers.ModelSerializer):
@@ -61,7 +49,6 @@ class ImageArticleSerializer(serializers.ModelSerializer):
 
     def get_image(self, articleimage):
         request = self.context.get('request')
-        print("r", request)
         image = articleimage.image.url
         return request.build_absolute_uri(image)
 
@@ -96,11 +83,11 @@ class UserImagesCustomPackSerializer(serializers.ModelSerializer):
         fields = ['images']
 
 
-class ImagesCustomPackSerializer(serializers.ModelSerializer):
+class ImagesMainCustomPackSerializer(serializers.ModelSerializer):
     item_id = serializers.SerializerMethodField()
     item_type = serializers.SerializerMethodField()
-    images = ImageCustomPackSerializer(source="main_image" , many=True)
-
+    images =serializers.SerializerMethodField()
+    #ImageCustomPackSerializer(source="main_image" , many=True)
     class Meta:
         model = CustomPack
         fields = ['item_id', 'item_type', 'images']
@@ -110,6 +97,17 @@ class ImagesCustomPackSerializer(serializers.ModelSerializer):
 
     def get_item_type(self, obj):
         return obj._meta.verbose_name
+    
+    def get_images(self ,obj):
+        images=[]
+        request = self.context.get('request')
+        imagesDict = ImageCustomPackSerializer(obj.main_image , many=True ,context={"request": request}).data
+        for element in imagesDict:
+            images.append(element['image'])
+
+        return images
+
+
     """def get_images(self, obj):
         request = self.context.get('request')
         boxe_images = obj.boxe.images
@@ -117,26 +115,31 @@ class ImagesCustomPackSerializer(serializers.ModelSerializer):
 
 
 class ImagesProductSerializer(serializers.ModelSerializer):
-    images = ImageProductSerializer(many=True)
+    images = serializers.SerializerMethodField()
     item_id = serializers.SerializerMethodField()
     item_type = serializers.SerializerMethodField()
-
     class Meta:
         model = Product
         fields = ['images', 'item_id', 'item_type']
-
     def get_item_id(self, obj):
         return obj.id
-
     def get_item_type(self, obj):
         return obj._meta.verbose_name
+    def get_images (self,obj):
+        images=[]
+        request = self.context.get('request')
+        imagesDict = ImageProductSerializer(obj.images , many=True ,context={"request": request}).data
+        for element in imagesDict:
+            images.append(element['image'])
+
+        return images
+        
 
 
 class ImagesPackSerializer(serializers.ModelSerializer):
-    images = ImagePackSerializer(many=True)
+    images = serializers.SerializerMethodField()
     item_id = serializers.SerializerMethodField()
     item_type = serializers.SerializerMethodField()
-
     class Meta:
         model = Pack
         fields = ['images', 'item_id', 'item_type']
@@ -146,10 +149,18 @@ class ImagesPackSerializer(serializers.ModelSerializer):
 
     def get_item_type(self, obj):
         return obj._meta.verbose_name
+    def get_images (self,obj):
+        images=[]
+        imagesDict = ImagePackSerializer(obj.images , many=True).data
+        for element in imagesDict:
+            images.append(element['image'])
+        return images
+        
 
 
 class ImagesArticleSerializer(serializers.ModelSerializer):
-    images = ImageArticleSerializer(many=True)
+    images = serializers.SerializerMethodField()
+    #images = ImageArticleSerializer(many=True)
     item_id = serializers.SerializerMethodField()
     item_type = serializers.SerializerMethodField()
 
@@ -162,6 +173,17 @@ class ImagesArticleSerializer(serializers.ModelSerializer):
 
     def get_item_type(self, obj):
         return obj._meta.verbose_name
+    
+    def get_images(self, obj):
+        images =[]
+        request = self.context.get('request')
+        images_queryset = obj.images.all()
+        for element in images_queryset :
+            image = element.image.url
+            images.append(request.build_absolute_uri(image))
+        return images
+        
+     
 
 
 class ImagesArticleCategorySerializer(serializers.ModelSerializer):
@@ -179,7 +201,7 @@ class ImagesCartItemSerializer(serializers.ModelSerializer):
     cartitem_id = serializers.SerializerMethodField()
     cartitem_images = GenericRelatedField({
         Product: ImagesProductSerializer(),
-        CustomPack: ImagesCustomPackSerializer(),
+        CustomPack: ImagesMainCustomPackSerializer(),
         Pack: ImagesPackSerializer()
     }, source="item")
 
@@ -200,63 +222,31 @@ class ImagesCartSerializer(serializers.ModelSerializer):
 
 
 """custompack"""
-
-
-class ImagesCustomPSerializer(serializers.ModelSerializer):
-    class Meta:
+class ImagesMainCustomPackSerializer(serializers.ModelSerializer):
+    class Meta :
         model = CustomPackImage
-        fields = ['image', 'item']
+        fields = ['image']
 
-
-class ImagesCustomPackArticleSerializer(serializers.ModelSerializer):
-    custompackitem_images = ImagesArticleSerializer(source="item")
-    custompackitem_id = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CustomPackArticle
-        fields = ["custompackitem_images", "custompackitem_id"]
-
-    def get_custompackitem_id(self, obj):
-        return obj.id
-
-
-class ImagesCustomPacArticlesSerializer(serializers.ModelSerializer):
-    custompackitems_images = ImagesCustomPackArticleSerializer(
-        many=True,  source="custompackarticle_set")
-    custompack_id = serializers.SerializerMethodField()
-
-    class Meta:
+class ImagesCustomPackSerializer(serializers.ModelSerializer):
+    packitems_images = serializers.SerializerMethodField()
+    main_image = serializers.SerializerMethodField()
+    class Meta :
         model = CustomPack
-        fields = ["custompackitems_images", "custompack_id"]
-
-    def get_custompack_id(self, obj):
-        return obj.id
-
-
-class ImagesCustomPackUserImageSeriazer(serializers.ModelSerializer):
-    image_id = serializers.SerializerMethodField()
-
-    class Meta:
-        model = CustomPackUserImage
-        fields = ['image_id', 'image', 'quantity', 'total']
-
-    def get_image_id(self, obj):
-        return obj.id
+        fields = ['id' , 'title' ,'main_image', 'packitems_images' ]
+    
+    def get_main_image (self,obj) :
+        request = self.context.get('request')
+        return ImagesMainCustomPackSerializer(obj.main_image.all().first() ,context={"request": request}).data['image']
+    def get_packitems_images (self ,obj) :
+        packitems= CustomPackArticle.objects.filter(custompack=obj)
+        articles = []
+        for element in packitems:
+            articles.append(element.item)
+            request = self.context.get('request')
+        return ImagesArticleSerializer(articles , many=True , context={"request": request} ).data
 
 
-class ImagesCustomPackUserImagesSeriazer(serializers.ModelSerializer):
-    userimages = ImagesCustomPackUserImageSeriazer(
-        source="user_images", many=True)
 
-    class Meta:
-        model = CustomPack
-        fields = ['userimages']
-
-
-class CustomPackImageSerializer (serializers.ModelSerializer):
-    class Meta:
-        model = CustomPackUserImage
-        fields = '__all__'
 
 
 """ ProductCategory"""
@@ -264,7 +254,6 @@ class CustomPackImageSerializer (serializers.ModelSerializer):
 
 class ImagesProductCategorySerializer(serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
-
     class Meta:
         model = ProductCategory
         fields = ['items']
@@ -282,27 +271,19 @@ class ImagesProductCategorySerializer(serializers.ModelSerializer):
         return ImagesProductSerializer(items, many=True, context={"request": request}).data
 
 
-class ImagesProductFilterSerializer(serializers.ModelSerializer):
-    items = ImagesProductSerializer(many=True)
 
-    class Meta:
-        model = ProductCategoryFilter
-        fields = ['items']
 
 # PackCategory
 
 
 class ImagesPackCategorySerializer(serializers.ModelSerializer):
-    items = serializers.SerializerMethodField()
-
+    images = serializers.SerializerMethodField()
     class Meta:
         model = PackCategory
-        fields = ['items']
-
-    def get_items(self, obj):
-        all_child = obj.get__all_children()
+        fields = ['images']
+    def get_images(self, obj):
+        all_child = obj.get_children()
         items = []
-        print('here')
         items.extend(obj.items.all())
         for child in all_child:
             child_itmes = child.items.all()
@@ -312,13 +293,6 @@ class ImagesPackCategorySerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return ImagesPackSerializer(items, many=True, context={"request": request}).data
 
-
-class ImagesPackFilterSerializer(serializers.ModelSerializer):
-    items = ImagesPackSerializer(many=True)
-
-    class Meta:
-        model = PackCategoryFilter
-        fields = ['items']
 
 
 # Order

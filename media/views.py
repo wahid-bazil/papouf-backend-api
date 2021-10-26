@@ -21,25 +21,12 @@ from categories.models import *
 from .serializers import *
 from rest_framework.views import APIView
 from orders.models import *
+from .mixins import StandardResultsSetPagination
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 
-class UserImagesCustomPack(generics.RetrieveAPIView):
-    parser_classes = [MultiPartParser, FormParser]
 
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            user = self.request.user
-            queryset = CustomPack.objects.filter(user=user)
 
-            return queryset
-        else:
-            try:
-                device_id = str(self.request.COOKIES['device_id'])
-            except:
-                raise NotFound({"detail": "user not found"})
-            queryset = CustomPack.objects.filter(device_id=device_id)
-            return queryset
-
-    serializer_class = UserImagesCustomPackSerializer
 
 
 class ImagesCartitemList(generics.ListAPIView):
@@ -61,20 +48,17 @@ class ImagesCartitemList(generics.ListAPIView):
     serializer_class = ImagesCartItemSerializer
 
 
-class ImagesBoxeList(generics.ListAPIView):
-    queryset = Boxe.objects.all()
-    serializer_class = ImagesBoxeSerializer
+
 
 
 class ImagesArticleList(generics.ListAPIView):
     queryset = Article.objects.all()
     serializer_class = ImagesArticleSerializer
 
+class ImagesArticleDetail(generics.RetrieveAPIView):
+    queryset = Article.objects.all()
+    serializer_class = ImagesArticleSerializer
 
-class ImagesArticleCategoryDetails(generics.RetrieveAPIView):
-    queryset = ArticleCategory.objects.all()
-    serializer_class = ImagesArticleCategorySerializer
-    lookup_field = 'title'
 
 class ImagesArticleChildrenList(generics.RetrieveAPIView):
     queryset = Article.objects.all()
@@ -88,44 +72,28 @@ class ImagesArticleChildrenList(generics.RetrieveAPIView):
 
         
 
-class ImagesBoxeDetail(generics.RetrieveAPIView):
-    queryset = Boxe.objects.all()
-    serializer_class = ImagesBoxeSerializer
+
 
 
 """CustomPack"""
-class ImagesCustomPackList(generics.ListCreateAPIView):
-    parser_classes = [MultiPartParser, FormParser]
-    queryset = CustomPackImage.objects.all()
-    serializer_class = ImagesCustomPSerializer
-    def create(self, request, *args, **kwargs):
-        CustomPackImage.objects.filter(item__isCopy=False).delete()
-        return super().create(request, *args, **kwargs)
-
-
-
-class ImagesCustomPackArticlesDetail(generics.ListAPIView):
+class ImagesCustomPackDetail(generics.RetrieveAPIView):
     def get_queryset(self):
-        custompack_id = self.request.query_params.get('id')
-        print(custompack_id)
-        queryset = CustomPackArticle.objects.filter(custompack__id=custompack_id)
-        return queryset
-    serializer_class = ImagesCustomPackArticleSerializer
+        if self.request.user.is_authenticated:
+            user = self.request.user
+            queryset = CustomPack.objects.filter(user=user)
+            return queryset
+        else:
+            try:
+                device_id = str(self.request.headers['deviceid'])
+            except:
+                raise NotFound({"detail": "user not found"})
+            guestuser, created = GuestUsers.objects.get_or_create(
+                device_id=device_id)
+            queryset = CustomPack.objects.filter(
+                device_id=guestuser)
+            return queryset
+    serializer_class =ImagesCustomPackSerializer
 
-class ImagesCustomPackUserImagesList(generics.ListCreateAPIView):
-    parser_classes = [MultiPartParser, FormParser]
-    queryset = CustomPackUserImage.objects.all()
-    serializer_class = CustomPackImageSerializer
-
-
-class ImagesCustomPackUserImagesDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = CustomPack.objects.all()
-    serializer_class = ImagesCustomPackUserImagesSeriazer
-
-
-class ImagesUserImageDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = CustomPackUserImage.objects.all()
-    serializer_class =ImagesCustomPackUserImageSeriazer
 
 """ variation"""
 class ImagesProductList(generics.ListAPIView):
@@ -140,21 +108,28 @@ class ImagesProductList(generics.ListAPIView):
 
 
 
-class ImagesCollectionList(APIView):
-        def get(self, request, *args, **kwargs):
-            status=self.request.query_params.get('status')
-            type = self.request.query_params.get('type')
-            nbOfitems=self.request.query_params.get('nbOfitems')
-            print(status,type,nbOfitems)
-            if type == 'product':
-                products=Product.objects.filter(status=status).order_by('-created')[:int(nbOfitems)]
-                serializer=ImagesProductSerializer(products,many=True ,context={"request":request})
-            else:
-                packs = Pack.objects.filter(status=status).order_by('-created')[:int(nbOfitems)]
-                serializer=ImagesPackSerializer(packs,many=True ,context={"request":request})
+
+class ImagesFeaturedProductList(generics.ListAPIView):
+    def  get_queryset(self):
+        queryset = Product.objects.filter(status__title="featured")
+        return queryset
+    serializer_class = ImagesProductSerializer
+    pagination_class = StandardResultsSetPagination
+    def get_serializer_context(self):
+        context={"request": self.request}
+        return context
         
-            
-            return Response(serializer.data )
+class ImagesFeaturedPackList(generics.ListAPIView):
+    def  get_queryset(self):
+        queryset = Pack.objects.filter(status__title="featured")
+        return queryset
+    serializer_class = ImagesPackSerializer
+    pagination_class = StandardResultsSetPagination 
+    def get_serializer_context(self):
+        context={"request": self.request}
+        return context
+    
+    
      
  
 
@@ -170,35 +145,75 @@ class ImagesPacktDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ImagesPackSerializer
 
 #ProductCategory
-class ImagesProductCategoryDetails(generics.RetrieveUpdateAPIView):
-    queryset = ProductCategory.objects.all()
-    serializer_class=ImagesProductCategorySerializer
-    lookup_field ='title'  
-    def get_serializer_context(self):
-        context={"request": self.request}
-        return context
+class ImagesProductCategoryDetails(generics.ListAPIView):
+    def get_queryset(self):
+        category_slug =self.kwargs.get('slug')
+        category = get_object_or_404(ProductCategory , slug =category_slug )
+        category_children = category.get_children()
+        filter_label = self.request.query_params.get('filter')
+        categoryitems=ProductCategory.objects.none()
+        products=Pack.objects.none()
+        if filter_label :
+            filter = get_object_or_404(Filter , slug =filter_label)
+            for element in category_children :
+                categoryitems = categoryitems | element.productcategoryitem_set.filter(filter=filter)
+        else :
+            for element in category_children :
+                categoryitems = categoryitems | element.productcategoryitem_set.all()
+        for element in categoryitems :
+            products = products | Product.objects.filter(pk=element.product.id)
+        return products
+    serializer_class = ImagesProductSerializer
+    pagination_class =StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend ,filters.OrderingFilter]
+    filterset_fields = '__all__'
+    ordering_fields = ['sale_price' ,'title','created','orders']
 
-class ImagesProductFilterDetails(generics.RetrieveUpdateAPIView):
-    queryset = ProductCategoryFilter.objects.all()
-    serializer_class = ImagesProductFilterSerializer
-    lookup_field = 'title'
+
     
 #PackCategory
-class ImagesPackCategoryDetails(generics.RetrieveUpdateAPIView):
-    queryset = PackCategory.objects.all()
-    serializer_class=ImagesPackCategorySerializer
-    lookup_field ='title'
-    def get_serializer_context(self):
-        context={"request": self.request}
-        return context
+class ImagesPackCategoryDetails(generics.ListAPIView):
+    def get_queryset(self):
+        category_slug =self.kwargs.get('slug')
+        category = get_object_or_404(PackCategory , slug =category_slug )
+        category_children = category.get_children()
+        filter_label = self.request.query_params.get('filter')
+        categoryitems=PackCategoryItem.objects.none()
+        packs=Pack.objects.none()
+        if filter_label :
+            filter = get_object_or_404(Filter , slug =filter_label)
+            for element in category_children :
+                categoryitems = categoryitems | element.packcategoryitem_set.filter(filter=filter)
+        else :
+            for element in category_children :
+                categoryitems = categoryitems | element.packcategoryitem_set.all()
+        
+        for element in categoryitems :
+            packs = packs | Pack.objects.filter(pk=element.pack.id)
+        return packs
+    serializer_class = ImagesPackSerializer
+    pagination_class =StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend ,filters.OrderingFilter]
+    filterset_fields = '__all__'
+    ordering_fields = ['sale_price' ,'title','created','orders']
 
-class ImagesPacktFilterDetails(generics.RetrieveUpdateAPIView):
-    queryset = PackCategoryFilter.objects.all()
-    serializer_class = ImagesPackFilterSerializer
-    lookup_field = 'title'
+
 
 # Order
 
 class ImagesOrderDetal(generics.RetrieveAPIView):
     queryset = Order.objects.all()
     serializer_class=ImagesOrderSerializer
+
+
+#articles 
+class ImagesArticleCategoryItems(generics.ListAPIView):
+    def get_queryset(self):
+        category_slug =self.kwargs.get('slug')
+        queryset = Article.objects.none()
+        categoryitems = ArticleCategoryItem.objects.filter(articlecategory__slug=category_slug)
+        for element in categoryitems:
+            queryset = queryset | Article.objects.filter(pk=element.article.pk)
+        return queryset
+    serializer_class = ImagesArticleSerializer
+    

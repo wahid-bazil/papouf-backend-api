@@ -1,16 +1,24 @@
 
+from categories.models import Filter
 from django.db import models
 from django.db.models import fields
 from rest_framework.fields import SerializerMethodField
 from rest_framework.generics import get_object_or_404
-from products.models import Article, Boxe, Pack, Product, test
+from products.models import Article, Boxe, ItemStatus, Pack, Product, test ,ProductFeature
 from rest_framework import serializers
 #from category.models import ArticleCategory
 #from media.serializers import ProductImageSerializer,BoxeImageSerializer
 
 
+class ProductFeature(serializers.ModelSerializer):
+    class Meta:
+        model = ProductFeature
+        fields = ['title']
 
-
+class ItemStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ItemStatus
+        fields = ['title']
 
 class BoxeSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
@@ -38,10 +46,12 @@ class ArticleImageSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
+    status = ItemStatusSerializer()
+    features = ProductFeature(many=True)
     #images = ProductImageSerializer(many=True)
     class Meta:
         model = Product
-        fields = ['id','title','sale_price','promo_price','description','type','status','promo' ,'promo_percentage']
+        fields = ['id','title','sale_price','promo_price','description','type','status','promo' ,'promo_percentage' ,'features']
     def get_type(self, obj):
         return obj._meta.verbose_name 
 
@@ -50,13 +60,14 @@ class ProductSerializer(serializers.ModelSerializer):
 class PackSerializer(serializers.ModelSerializer):
     items =  ArticleSerializer(many=True,required=True)
     type = serializers.SerializerMethodField()
-    boxe = BoxeSerializer()
+    features = ProductFeature(many=True)
     class Meta:
         model = Pack
-        fields = ['id','title','sale_price','items','is_customized','boxe','description','type']
+        fields = ['id','title','sale_price','items','is_customized','description','type' ,'features']
     def get_type(self, obj):
         return obj._meta.verbose_name
-
+ 
+            
 
 class testSerializer(serializers.ModelSerializer):
     #boxe= BoxeSerializer(read_only=True)

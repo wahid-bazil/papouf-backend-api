@@ -1,5 +1,6 @@
 
-from testd.models import testd
+
+from django.db.models import query
 from customization.models import CustomPack
 from django.contrib.auth.models import User
 from django.http import request
@@ -14,21 +15,23 @@ from rest_framework.generics import (
     CreateAPIView,
     ListCreateAPIView,
     ListAPIView,
+    RetrieveAPIView,
     RetrieveUpdateAPIView,
     RetrieveUpdateDestroyAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from .models import Cart, CartItem
-from .serializers import CartItemSerializer, CartItemUpdateSerializer, tests,CartSerializer
-from rest_framework.exceptions import NotAcceptable, NotFound, ValidationError, PermissionDenied
+from .serializers import CartItemSerializer, UpdateCartItemSerializer, tests,CartSerializer,CreateCartItemSerializer
+from rest_framework.exceptions import NotAcceptable, NotAuthenticated, NotFound, ValidationError, PermissionDenied
 from users.models import GuestUsers, NewUser
 from rest_framework.views import APIView
 from media.serializers import ImagesCartItemSerializer
+from rest_framework import exceptions
+from .mixins import MethodSerializerView
 
 
-
-class CartDetail(RetrieveUpdateAPIView):
+class CartDetail(RetrieveAPIView):
     def get_object(self):
         if self.request.user.is_authenticated:
             user = self.request.user
@@ -36,27 +39,33 @@ class CartDetail(RetrieveUpdateAPIView):
             
             return obj
         else:
-           
             try:
-                
                 device_id = self.request.headers['deviceid']
-                print(device_id)
             except:
                 raise NotFound({"detail":"user not found"})
             guestuser ,created=GuestUsers.objects.get_or_create(device_id=device_id)
-            obj = get_object_or_404(Cart,device_id=guestuser ,active=True)
+            obj ,created = Cart.objects.get_or_create(device_id=guestuser.device_id ,active=True)
             return obj
     serializer_class = CartSerializer
 
+class CartDetails(RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Cart.objects.filter(user=user)
+        return queryset
+    
+    serializer_class = CartSerializer
 
 
-class CartitemList(ListCreateAPIView):
+class CartitemList(MethodSerializerView,ListCreateAPIView):
     def get_queryset(self):
         if self.request.user.is_authenticated:   
             user = self.request.user
             queryset = CartItem.objects.filter(cart__user=user,cart__active=True)
             return queryset
         else:
+            
             try:
                 device_id = str(self.request.headers['deviceid'])  
             except:
@@ -64,20 +73,23 @@ class CartitemList(ListCreateAPIView):
             guestuser ,created=GuestUsers.objects.get_or_create(device_id=device_id)
             queryset = CartItem.objects.filter(cart__device_id=guestuser)
             return queryset
-    serializer_class = CartItemSerializer
-
-
-    def create(self, request, *args, **kwargs):  
+    method_serializer_classes = {
+        ('GET', ): CartItemSerializer,
+        ('POST'): CreateCartItemSerializer
+    }
+    #serializer_class = CartItemSerializer
+   
+    def create(self, request, *args, **kwargs):
+        print(request.data)
         try:
-            type = str(request.data['type'])
+            type = str(request.data['item_type'])
         except Exception as e:
             raise ValidationError("Please Enter a type")
 
         try:
-            item_id = int(request.data['id'])
+            item_id = int(request.data['item_id'])
         except Exception as e:
             raise ValidationError("Please Enter a item_id")
-      
         if type == 'product':
             item = get_object_or_404(Product, pk=item_id)
             cartitem = self.get_queryset().filter(item_product=item)
@@ -96,7 +108,6 @@ class CartitemList(ListCreateAPIView):
             cartitem = self.get_queryset().filter(item_custompack=item)
         else:
             return Response("not a valid type", status=status.HTTP_400_BAD_REQUEST)
-       
         if cartitem.exists():
             cartitem = cartitem.first()
             cartitem.quantity += 1
@@ -106,6 +117,7 @@ class CartitemList(ListCreateAPIView):
                 cart = get_object_or_404(Cart, user=request.user ,active=True)
                 
             else:
+                
                 try:
                     device_id = str(self.request.headers['deviceid'])
          
@@ -120,39 +132,39 @@ class CartitemList(ListCreateAPIView):
         if type == 'custompack' :
             item.inCart=True
             item.save()
-        serializer = self.serializer_class(cartitem)
+        print(cartitem)
+        serializer = CartItemSerializer(cartitem)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class CartitemListDelete(RetrieveUpdateDestroyAPIView):
+class CartitemListDelete(MethodSerializerView,RetrieveUpdateDestroyAPIView):
     serializer_class=CartItemSerializer
+    method_serializer_classes = {
+        ('GET', ): CartItemSerializer,
+        ('PUT'): UpdateCartItemSerializer
+    }
     def get_queryset(self):
-        
         if self.request.user.is_authenticated:   
             user = self.request.user
             queryset = CartItem.objects.filter(cart__user=user)
             return queryset
         else:
-            
             try:
                 print(self.request.headers['deviceid'])
                 device_id = self.request.headers['deviceid']
             except:
                 raise NotFound({"detail":"user not found"})
             guestuser ,created=GuestUsers.objects.get_or_create(device_id=device_id)
-          
             queryset = CartItem.objects.filter(cart__device_id=guestuser)
-            print(queryset)
             return queryset
     def update(self, request, *args, **kwargs):
         cartitem = self.get_object()
-        serializer = CartItemUpdateSerializer(cartitem , data=request.data)
+        serializer = UpdateCartItemSerializer(cartitem , data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         serializer = CartItemSerializer(cartitem)
         return Response(serializer.data,status=status.HTTP_200_OK)
   
     
-
 
 class CartLenght(ListAPIView):
     permission_classes =[IsAuthenticated]

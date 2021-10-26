@@ -19,22 +19,22 @@ from .views import *
 
 
 urlpatterns = [
-
-    path('address/details/',AddressDetail.as_view()),
-    path('create/', CustomUserCreate.as_view(),name='create_user'),
+    path('details', UserDetail.as_view()),
+    path('contact-details',UserContactDetail.as_view()),
+    path('numbers',UserNumbers.as_view()),
+    path('sign-up/', CustomUserCreate.as_view()),
     path('email-verify/', VerifyEmail.as_view(),name='email-verify'),
-    path('login/', LoginAPIView.as_view(), name="login"),
-    path('address/detail', AddressDetail.as_view(),name='create_user'),
-    path('mini-detail', UserMiniDetail.as_view(),name='create_user'),
-    path('detail', UserDetail.as_view(),name='create_user'),
+    path('log-in/', LoginAPIView.as_view(), name="login"),
     path('request-reset-email/', RequestPasswordResetEmail.as_view(),
          name="request-reset-email"),
     path('password-reset/<uidb64>/<token>/',
          PasswordTokenCheckAPI.as_view(), name='password-reset-confirm'),
     path('password-reset-complete/', SetNewPasswordAPIView.as_view(),
-         name='password-reset-complete'),   
+         name='password-reset-complete'),
+    path('is_first_load', FirstLoadView.as_view()),
+    
 
-    path('user-historique/', UserGuestHistorique.as_view()),
+   
  
 
 ]

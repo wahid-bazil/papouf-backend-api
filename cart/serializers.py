@@ -20,20 +20,30 @@ class CartItemSerializer(serializers.ModelSerializer):
         Article : ArticleSerializer(),
         CustomPack:CustomPackSerializer()
 
-    })
+    },)
+   
     class Meta:
             model = CartItem
             fields = ['cartitem_id','quantity','item','total']
-    
+          
     def get_cartitem_id(self,obj):
         return obj.id
 
+class CreateCartItemSerializer(serializers.ModelSerializer):
+    item_id=serializers.IntegerField(required=True,write_only=True)
+    item_type=serializers.CharField(max_length=10, write_only=True)
+    class Meta : 
+        model = CartItem
+        fields=['item_id','item_type']
+    
 
-class CartItemUpdateSerializer(serializers.ModelSerializer):
 
+class UpdateCartItemSerializer(serializers.ModelSerializer):
     class Meta:
             model = CartItem
             fields = ['quantity']
+
+
 
 class tests(serializers.ModelSerializer):
 

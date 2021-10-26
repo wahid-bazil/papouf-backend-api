@@ -19,17 +19,23 @@ def upload_to(instance, filename):
 
 
 class ItemStatus(models.Model):
-	title = models.CharField(max_length=50 ,primary_key=True)
+	title = models.CharField(max_length=50 ,unique=True)
+	label = models.CharField(max_length=50 )
+	def __str__(self) -> str:
+		return self.title
 
 class test (models.Model):
 	name = models.CharField(max_length=30)
 	#boxe = models.ForeignKey('Boxe', on_delete=models.CASCADE, null=True)
 
 
+class ProductFeature(models.Model):
+	title = models.CharField(max_length=50 , blank=True , null=True)
 
 class Product (models.Model):
     status = models.ForeignKey(ItemStatus,on_delete=models.SET_NULL ,null=True ,blank=True)
     title=models.CharField(max_length=35)
+    caption = models.CharField(max_length=50 ,blank=True ,null=True)
     inventory=models.IntegerField()
     created=models.DateTimeField(default=timezone.now)
     active=models.BooleanField(default=True)
@@ -40,14 +46,15 @@ class Product (models.Model):
     description = models.CharField(max_length=200 , default="")
     provider = models.ForeignKey(Provider,on_delete=models.CASCADE,blank=True, null=True)
     cartItem = GenericRelation(CartItem,related_query_name='item_product')
-    #category = models.ManyToManyField("category.ProductCategory" ,related_name='items' ,blank=True)
-    #test_category = models.ForeignKey(Category,on_delete=models.CASCADE ,null=True , blank=True ,related_name='itemsTest')
     promo = models.BooleanField(default=False)
+    orders=models.PositiveBigIntegerField(default=0)
+    features = models.ManyToManyField(ProductFeature ,null=True ,blank=True)
 
 
 
     class Meta :
         verbose_name = 'product'
+        ordering = ['-orders']
   
     def get_sale_price(self):
       return self.sale_price
@@ -58,21 +65,25 @@ class Product (models.Model):
 class Pack(models.Model):
 	status = models.ForeignKey(ItemStatus,on_delete=models.SET_NULL ,null=True ,blank=True)
 	title = models.CharField(max_length=120)
+	caption = models.CharField(max_length=50 ,blank=True ,null=True)
 	cost_price = models.DecimalField(decimal_places=2, max_digits=20,default=0)
 	sale_price = models.DecimalField(decimal_places=2, max_digits=20, default=0,)
 	active = models.BooleanField(default=True)
 	inventory = models.IntegerField(default=1)
 	items = models.ManyToManyField("Article",through='PackArticle')
-	boxe = models.ForeignKey("Boxe",on_delete=CASCADE,null=True,blank=True)#optional field for small packs
 	is_customized = models.BooleanField(default=False)
 	created=models.DateTimeField(default=timezone.now)
-	description = models.CharField(max_length=30,default="")
+	description = models.TextField(max_length=1500,default="")
 	cartItem = GenericRelation(CartItem,related_query_name='item_pack')
-	#category =  models.ForeignKey(PackCategory,on_delete=CASCADE, null=True,related_name='items')
-	#pack_type = models.ForeignKey(PackType , on_delete=CASCADE, blank=True , null=True)
+	orders=models.PositiveBigIntegerField(default=0)
+	promo_price = models.DecimalField(decimal_places=2, max_digits=20, null=True, blank=True)
+	promo_percentage =models.IntegerField(blank=True ,null=True)
+	promo = models.BooleanField(default=False)
+	features = models.ManyToManyField(ProductFeature ,null=True ,blank=True)
 
 	class Meta :
 		verbose_name = 'pack'
+		ordering = ['-orders']
 
 
 	def update_nb_items(self):
@@ -82,7 +93,11 @@ class Pack(models.Model):
 	def get_sale_price(self):
 		return self.sale_price
 	def get_cost_price (self):
-		return self.cost_price	
+		return self.cost_price
+	
+	def __str__(self) -> str:
+		return self.title
+
 
 
 
@@ -134,6 +149,9 @@ class Article(models.Model):
 	class Meta :
 		verbose_name = 'article'
 		ordering = ['sale_price']
+	
+	def __str__(self) -> str:
+		return self.title
 
 		
 
@@ -143,29 +161,25 @@ class Article(models.Model):
 	def get_cost_price (self):
 		return self.cost_price
 			
+	def __str__(self) -> str:
+		return self.title
 
 
 
 class PackArticle(models.Model):
 	pack = models.ForeignKey(Pack, on_delete=models.CASCADE)
-	item = models.ForeignKey(Article,on_delete=CASCADE)
+	item = models.ForeignKey(Article,on_delete=CASCADE , verbose_name="Article")
 	quantity = models.IntegerField(default=1)
 	total = models.DecimalField(max_digits=10, decimal_places=2 ,default=0)
+
+
 
 	def update_total(self):
 		total=self.item.sale_price*self.quantity
 		self.total=total
 
 
-def product_post_saved_receiver(sender, instance, created, *args, **kwargs):
-	product = instance
-	variations = product.variation_set.all()
-	if variations.count() == 0:
-		new_var = Variation()
-		new_var.product = product
-		new_var.title = "Default"
-		new_var.prix = product.prix
-		new_var.save()
+
 
 
 
@@ -192,7 +206,18 @@ def product_presaved_receiver(sender, instance,  *args, **kwargs):
 		elif  instance.promo_price == None:
 			promo_price=(-(instance.promo_percentage-100)*instance.sale_price)/100
 			instance.promo_price=promo_price
+
+def pack_presaved_receiver(sender, instance,  *args, **kwargs):
+	if instance.promo:
+		if instance.promo_percentage == None:
+			promo_percentage=-(((instance.promo_price*100)/instance.sale_price)-100)
+			instance.promo_percentage=promo_percentage
+		elif  instance.promo_price == None:
+			promo_price=(-(instance.promo_percentage-100)*instance.sale_price)/100
+			instance.promo_price=promo_price
+
 pre_save.connect(product_presaved_receiver, sender=Product)
+pre_save.connect(pack_presaved_receiver, sender=Pack)
 pre_save.connect(packArticle_pre_saved_receiver, sender=PackArticle)
 post_save.connect(packArticle_post_delete_saved_receiver, sender=PackArticle)
 post_delete.connect(packArticle_post_delete_saved_receiver, sender=PackArticle)

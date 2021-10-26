@@ -4,17 +4,16 @@ from customization.views import *
 
 
 urlpatterns = [
-  
-  path('test',test.as_view()),
-  path('userCustomPack', CustomPackList.as_view()),
-  path('userCustomPack/<int:pk>', CustomPackDetails.as_view()),
-  path('userCustomPack/pack-copy', PackCopyCustomisation.as_view()),
-  path('userCustomPack/detail', CustomPackDetail.as_view()),
-  path('userCustomPack/packitems',CustomPackArticleList.as_view()),
-  path('userCustomPack/packitems/<int:pk>',CustomPackArticleDetail.as_view()),
-  path('userCustomPack/images/upload', CustomPackImageList.as_view()),
-  path('userCustomPack/images/update/<int:pk>', CustomPackImageDetail.as_view()),
-  path('userCustomPack/uimage/<int:pk>', CustomPackBoxeImageView.as_view()),
+
+  path('custompack', CustomPackList.as_view()),
+  path('custompack/<int:pk>', CustomPackDetails.as_view()),
+  path('custompack/pack-copy', PackCopyCustomisation.as_view()),
+  #path('userCustomPack/detail', CustomPackDetail.as_view()),
+  path('custompack/packitems',CustomPackArticleList.as_view()),
+  path('custompack/packitems/<int:pk>',CustomPackArticleDetail.as_view()),
+  #path('userCustomPack/images/upload', CustomPackImageList.as_view()),
+  #path('userCustomPack/images/update/<int:pk>', CustomPackImageDetail.as_view()),
+  #path('userCustomPack/uimage/<int:pk>', CustomPackBoxeImageView.as_view()),
   path('custompack/total/<int:pk>', CustomPackTotal.as_view()),
   
   
