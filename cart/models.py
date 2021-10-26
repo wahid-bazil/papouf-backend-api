@@ -5,8 +5,8 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from django.db import models
 from django.db.models.signals import pre_save, post_save, post_delete
-from users.models import GuestUsers
-from users.models import NewUser
+from accounts.models import GuestUsers
+from accounts.models import NewUser
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -22,37 +22,14 @@ class CartItem(models.Model):
 	item = GenericForeignKey('content_type', 'object_id')
 	quantity = models.PositiveIntegerField(default=1)
 	total = models.DecimalField(max_digits=10, decimal_places=2 ,blank=True)
-
-	def set_itemType(self):
-		self.content_type_label = self.content_type.name
 		
 	def __unicode__(self):
 		return self.item.title
 
 
 
-def cart_item_pre_save_receiver(sender, instance, *args, **kwargs):
-	qty = instance.quantity
-	if qty >= 1:
-		
-		price = instance.item.get_sale_price()
-		print(price)
-	
-		total = Decimal(qty) * Decimal(price)
-		
-		instance.total = total
-
-pre_save.connect(cart_item_pre_save_receiver, sender=CartItem)
 
 
-
-def cart_item_post_save_receiver(sender, instance, *args, **kwargs):
-	instance.set_itemType()
-	
-
-pre_save.connect(cart_item_post_save_receiver, sender=CartItem)
-
-#post_delete.connect(cart_item_post_save_receiver, sender=CartItem)
 
 
 class Cart(models.Model):
@@ -69,18 +46,6 @@ class Cart(models.Model):
 	
 	def __unicode__(self):
 		return str(self.id)
-	def update_subtotal(self):
-		subtotal = 0
-		items = self.cartitems.all()
-		print(items)
-		for item in items:
-			subtotal += item.total
-		
-		self.subtotal = "%.2f" %(subtotal)
-		self.save()
-	def is_complete(self):
-		self.active = False
-		self.save()
 
 
 
@@ -88,14 +53,29 @@ def cart_item_post_save_receiver(sender, instance, *args, **kwargs):
 	instance.cart.update_subtotal()
 
 
+
+def cart_item_pre_save_receiver(sender, instance, *args, **kwargs):
+	qty = instance.quantity
+	if qty >= 1:
+		
+		price = instance.item.get_sale_price()
+		print(price)
+	
+		total = Decimal(qty) * Decimal(price)
+		
+		instance.total = total
+
+def cart_item_post_save_receiver(sender, instance, *args, **kwargs):
+	instance.set_itemType()
+	
+
+pre_save.connect(cart_item_post_save_receiver, sender=CartItem)
+pre_save.connect(cart_item_pre_save_receiver, sender=CartItem)
 post_save.connect(cart_item_post_save_receiver, sender=CartItem)
-
-
-
-
 
 
 @receiver(post_save, sender=GuestUsers)
 def user_is_created(sender,instance,created,**kwargs):
     if created:
         Cart.objects.create(device_id=instance)
+	

@@ -3,10 +3,10 @@
 from django.db import models
 from django.db.models.deletion import CASCADE
 from django.utils import timezone, tree
-from users.models import NewUser, GuestUsers
+from accounts.models import NewUser, GuestUsers
 from django.dispatch import receiver
 from django.db.models.signals import pre_save, post_save, post_delete
-from products.models import Article, Boxe
+from collections.models import Article, Boxe
 from django.contrib.contenttypes.fields import GenericRelation
 from django.utils.translation import gettext_lazy as _
 from cart.models import CartItem
@@ -33,50 +33,13 @@ class CustomPack (models.Model):
     device_id = models.ForeignKey(
         GuestUsers, on_delete=models.CASCADE, blank=True, null=True)
     cartItem = GenericRelation(CartItem, related_query_name='item_custompack')
-    #pack_type = models.ForeignKey(PackType , on_delete=CASCADE, blank=True , null=True)
-    
+
     class Meta:
         unique_together = ('user', 'device_id',)
 
     class Meta:
         verbose_name = 'custompack'
 
-    def get_sale_price(self):
-        return self.sale_price
-
-    def get_cost_price(self):
-        return self.cost_price
-
-    def update_sale_price(self):
-        sale_price = 0
-        items = self.custompackarticle_set.all()
-        for item in items:
-            sale_price += item.item.get_sale_price()*item.quantity
-        images = self.user_images.all()
-
-        for image in images:
-            sale_price += image.total
-        self.sale_price = sale_price
-        self.save()
-
-    def update_cost_price(self):
-        cost_price = 0
-        items = self.custompackarticle_set.all()
-        for item in items:
-            cost_price += item.item.get_cost_price()*item.quantity
-        images = self.user_images.all()
-        for image in images:
-            cost_price += image.total
-        self.cost_price = cost_price
-        self.save()
-
-    def update_nb_items(self):
-        nb = self.custompackarticle_set.all().count()
-        self.nb_items = nb
-        self.save()
-
-    def get_prix(self):
-        return self.prix
 
 
 
@@ -85,11 +48,6 @@ class CustomPackArticle(models.Model):
     item = models.ForeignKey(Article, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
     total = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
-
-    def update_total(self):
-        sale_price = self.item.get_sale_price()
-        total = sale_price*self.quantity
-        self.total = total
 
     class Meta :
         verbose_name = 'packarticle'    
@@ -114,6 +72,11 @@ class CustomPackSetting(models.Model):
     def __str__(self) -> str:
         return "setting" + str(self.id)
 
+
+
+    
+
+
 @receiver(post_save, sender=CartItem)
 def CreateCustompack(sender, instance, created, **kwargs):
     if instance.item._meta.verbose_name == 'custompack':
@@ -123,8 +86,6 @@ def CreateCustompack(sender, instance, created, **kwargs):
             else :
                 CustomPack.objects.create(device_id=instance.item.device_id)
 
-
-   
 
 
 

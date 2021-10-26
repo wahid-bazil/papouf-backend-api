@@ -2,8 +2,8 @@
 import collections
 from media.models import BoxeImage
 from rest_framework.fields import MultipleChoiceField
-from products.models import Boxe, Pack, Product, test
-from products.serializers import ArticleSerializer, BoxeSerializer, PackSerializer, ProductSerializer, testArticleSerializer, testSerializer
+from .models import Pack, Product
+from .serializers import ArticleSerializer, BoxeSerializer, PackSerializer, ProductSerializer, testArticleSerializer, testSerializer
 from rest_framework import generics, serializers 
 from rest_framework.response import Response
 from rest_framework.reverse import reverse as api_reverse
@@ -24,7 +24,7 @@ from rest_framework.exceptions import NotAcceptable, ValidationError, Permission
 from django.utils.translation import ugettext_lazy as _
 
 
-from products.models import Product , Article
+from.models import Product , Article
 from rest_framework.permissions import AllowAny
 from rest_framework.parsers import MultiPartParser,FormParser
 from media.serializers import ImagesProductSerializer
@@ -34,15 +34,6 @@ class StandardResultsSetPagination(PageNumberPagination):
     page_size = 100
     page_size_query_param = 'page_size'
     max_page_size = 1000
-
-
-
-
-
-class BoxeList(generics.ListCreateAPIView):
-    queryset =  Boxe.objects.all()
-    serializer_class = BoxeSerializer
-
 
 
 class ProductList(generics.ListCreateAPIView):
@@ -80,11 +71,6 @@ class ArticleChildrendList(RetrieveAPIView):
         return Response(serializer.data,status.HTTP_200_OK)
 
     
-
-
-
-
-
 class PackList(generics.ListCreateAPIView):
     queryset = Pack.objects.all()
     serializer_class = PackSerializer

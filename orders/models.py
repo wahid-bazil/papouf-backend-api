@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from django.db.models.deletion import SET_NULL
-from delivery.models import ShippingMode
+from shipping.models import ShippingMode
 #from delivery.models import Delivery_Mode
 from django.utils.translation import gettext_lazy as _
 
@@ -11,10 +11,10 @@ from django.db import models
 from django.db.models.signals import pre_save, post_save
 # Create your models here.
 from cart.models import Cart
-from users.models import NewUser,Address
+from accounts.models import NewUser,Address
 
 from django.utils.timezone import datetime
-from payment.models import PaymentMode
+
 from .mixins import send_order_email
 
 
@@ -44,7 +44,7 @@ class Order(models.Model):
     shipping_time = models.IntegerField(null=True, blank=True)
     order_total = models.FloatField(null=True, blank=True)
     is_paid = models.BooleanField(default=False)
-    payment_mode = models.ForeignKey(PaymentMode,on_delete=SET_NULL,null=True, blank=True)
+    #payment_mode = models.ForeignKey(PaymentMode,on_delete=SET_NULL,null=True, blank=True)
     class Meta:
         ordering = ['-id']
 

@@ -1,5 +1,5 @@
 
-from products.models import Article, Pack, Product
+from collections.models import Article, Pack, Product
 from django.db import models
 from django.db.models.base import Model
 from django.db.models.deletion import CASCADE, SET_NULL
@@ -36,14 +36,7 @@ class ProductCategory(models.Model):
         super(ProductCategory, self).save(
             force_insert, force_update, *args, **kwargs)
 
-    def get_children(self):
-        all_children = [self]
-        for first_child in self.children.all():
-            all_children.append(first_child)
-            all_children.extend(first_child.get_children())
-        return all_children
-    def __str__(self):
-        return self.title
+
 
     class Meta:
         verbose_name = '1.Product Categorie'
@@ -71,14 +64,6 @@ class PackCategory(models.Model):
         super(PackCategory, self).save(
             force_insert, force_update, *args, **kwargs)
             
-    def get_children(self):
-        all_children = [self]
-        for first_child in self.children.all():
-            all_children.append(first_child)
-            all_children.extend(first_child.get_children())
-        return all_children
-    def __str__(self):
-        return self.title
         
     class Meta:
         verbose_name = '2.Pack Categorie'
@@ -96,13 +81,6 @@ class ArticleCategory(models.Model):
             force_insert, force_update, *args, **kwargs)
 
    
-    def get_children(self):
-        all_children = []
-        for first_child in self.children.all():
-            all_children.append(first_child)
-            all_children.extend(first_child.get_children())
-        return all_children
-
     class Meta:
         verbose_name = '3.Article Categorie'
     def __str__(self) -> str:

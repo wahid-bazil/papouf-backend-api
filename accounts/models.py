@@ -1,5 +1,5 @@
 from django.conf import settings
-from delivery.models import ShippingCity
+from shipping.models import ShippingCity
 from django.db import models
 
 # Create your models here.

@@ -1,10 +1,10 @@
 from warnings import filters
 from django.db.models import fields
 from django.db.models.base import Model
-from products.models import Pack
+from collections.models import Pack
 from django.contrib.auth import models
 from rest_framework import serializers
-from products.serializers import PackSerializer, ProductSerializer, ArticleSerializer
+from collections.serializers import PackSerializer, ProductSerializer, ArticleSerializer
 from .models import ArticleCategory, Filter, PackCategoryItem, ProductCategory, PackCategory, ProductCategoryItem
 
 

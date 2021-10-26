@@ -1,12 +1,12 @@
 
-from delivery.models import ShippingCity
+from shipping.models import ShippingCity
 from django.shortcuts import get_object_or_404
-from delivery.serializers import ShippingCitySerializer
+from shipping.serializers import ShippingCitySerializer
 from re import T
 from django.db import models
 from django.db.models import fields, manager
 from rest_framework import serializers
-from users.models import Address, NewUser
+from .models import Address, NewUser
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib import auth
 from rest_framework.exceptions import AuthenticationFailed, NotFound
@@ -178,22 +178,7 @@ class UserDetailsSerializer(serializers.ModelSerializer):
         fields = ['email','name','phone_number','address_details']
 
 
-"""class userNumbersAllSerializer(serializers.ModelSerializer):
-    current_cart=serializers.ModelSerializer()
-    orders_made=serializers.ModelSerializer()
-    orders_in_process=serializers.ModelSerializer()
-    orders_refunded=serializers.ModelSerializer()
-    class Meta:
-        model = NewUser
-        fields=['current_cartitems' , 'orders_made' , 'orders_in_process' , 'orders_refunded' ]
-    def get_current_cart (self,obj):
-        current_cartitems=0
-        try:
-            cart=Cart.objects.get(cart__user=obj.email)
-            current_cartitems = len(cart.cartitems)
-        except:
-            pass
-    """
+
 class userNumbersMiniSerializer(serializers.ModelSerializer , UserNumbers):
     nbOf_current_cartitems=serializers.SerializerMethodField()
     nbOf_orders_in_process=serializers.SerializerMethodField()

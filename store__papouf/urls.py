@@ -19,7 +19,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView
 )
-from users.views import CustomTokenObtainPairView
+from accounts.views import CustomTokenObtainPairView
 from rest_framework import permissions
 
 from drf_yasg.views import get_schema_view
