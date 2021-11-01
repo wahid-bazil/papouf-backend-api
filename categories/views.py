@@ -21,6 +21,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 #Products
+
 class ProductCategoryMiniDetail(generics.RetrieveAPIView):
     queryset=ProductCategory.objects.all()
     serializer_class = ProductCategoryMiniSerializer
@@ -61,6 +62,7 @@ class ProductCategoryItems(generics.ListAPIView):
     ordering_fields = ['sale_price' ,'title','created','orders']
 
 
+
 class ProductflitredList(generics.ListAPIView):
     def get_queryset(self):
         product_category_items= ProductCategoryItem.objects.filter(productcategory__label=self.kwargs.get('category') , filter__label=self.kwargs.get('filter'))
@@ -84,7 +86,8 @@ class PackCateogoriesTree(generics.ListAPIView):
 
 class PackCateogoryChildrenTree(generics.RetrieveAPIView):
     queryset = PackCategory.objects.all()
-    serializer_class=PackCategoriesTreeSerializer 
+    serializer_class=PackCategoriesTreeSerializer
+    lookup_field = 'slug'
 
 class PackCategoryItems(generics.ListAPIView):
     def get_queryset(self):
@@ -112,6 +115,13 @@ class PackCategoryItems(generics.ListAPIView):
     filterset_fields = '__all__'
     ordering_fields = ['sale_price' ,'title','created','orders']
 
+
+
+
+
+    
+
+
 class PackflitredList(generics.ListAPIView):
     def get_queryset(self):
         pack_category_items = PackCategoryItem.objects.filter(packcategory__label=self.kwargs.get('category') , filter__label=self.kwargs.get('filter'))
@@ -127,7 +137,10 @@ class PackArticlesCategoriesList(generics.RetrieveAPIView):
     lookup_field ='label'
     
 
+
+
 #Articles
+
 class ArticleCateogoriesList(generics.ListAPIView):
     queryset=ArticleCategory.objects.all() 
     serializer_class=ArticleCategoryMiniSerializer

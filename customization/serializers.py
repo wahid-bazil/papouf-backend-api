@@ -4,9 +4,9 @@ from django.db.models import fields
 from django.db.models.base import Model
 from customization.models import CustomPack,CustomPackArticle,CustomPackUserImage
 from rest_framework import serializers
-from collections.serializers import ArticleSerializer
-from accounts.serializers import UserMiniSerializer
-
+from products.serializers import ArticleSerializer,BoxeSerializer
+from users.serializers import UserMiniSerializer
+from products.models import Boxe
 
 
 

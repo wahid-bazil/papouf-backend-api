@@ -7,6 +7,8 @@ from django.template.loader import get_template
 from django.template import Context
 from store__papouf.settings import EMAIL_HOST_USER
 from django.core.mail import EmailMessage
+
+
 class MethodSerializerView(object):
     '''
     Utility class for get different serializer class by method.
@@ -31,18 +33,17 @@ class MethodSerializerView(object):
         raise exceptions.MethodNotAllowed(self.request.method)
 
 
-def send_order_email(ctx ,client_email) :
-
-        
-    message = get_template("email.html").render(ctx)
+def send_order_email(ctx ,client_email ,subject) :
+    message = get_template("order_email.html").render(ctx)
     mail = EmailMessage(
-    subject="Order confirmation",
+    subject=subject,
     body=message,
     from_email=EMAIL_HOST_USER,
     to=[client_email],
     reply_to=[EMAIL_HOST_USER],
     )
     mail.content_subtype = "html"
+    print('done')
     return mail.send()
 
        

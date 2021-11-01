@@ -6,6 +6,6 @@ from orders.views import *
 urlpatterns = [
 path('list', OrderList.as_view()),
 path('list/<int:pk>', OrderDetail.as_view()),
-path('detail/lenght',OrdersLenght.as_view())
+path('nb-of-orders',OrdersLenght.as_view())
 
 ]

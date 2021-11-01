@@ -2,7 +2,7 @@
 from django.db.models.query import QuerySet
 from rest_framework.views import APIView
 from customization.models import CustomPackArticle
-from collections.models import Article, Pack
+from products.models import Article, Boxe, Pack
 from django.shortcuts import get_object_or_404
 from rest_framework import generics, serializers
 from rest_framework.exceptions import NotAcceptable, ValidationError, PermissionDenied
@@ -12,22 +12,38 @@ from .serializers import CustomPackArticleUpdate, CustomPackSerializer, CustomPa
 from rest_framework.permissions import AND, SAFE_METHODS, IsAuthenticated, IsAuthenticatedOrReadOnly, BasePermission, IsAdminUser, DjangoModelPermissions
 from rest_framework.exceptions import NotAcceptable, NotFound, ValidationError, PermissionDenied
 from rest_framework.parsers import MultiPartParser, FormParser
-from accounts.models import GuestUsers
-from collections.serializers import PackSerializer
+from users.models import GuestUsers
+from products.serializers import PackSerializer
 from media.models import CustomPackImage
 from cart.models import CartItem
 from .mixins import MethodSerializerView
 from .serializers import CreateCustomPackSerializer
 
+def deleteCopyPack(user):
+    custompacks = CustomPack.objects.filter(user=user, isCopy=True)
+    cartitems = CartItem.objects.filter(
+        cart__active=True, cart__user=user, content_type__model='custompack')
 
+
+class test(APIView):
+    def get(self, request, format=None):
+        deleteCopyPack(self.request.user)
+        return Response(status=status.HTTP_200_OK)
 
 
 class CustomPackTotal(generics.RetrieveAPIView):
     queryset = CustomPack.objects.all()
+
     def retrieve(self, request, *args, **kwargs):
         obj = self.get_object()
         total = obj.sale_price
         return Response(total)
+
+
+class CustomPackImageList(generics.ListCreateAPIView):
+    parser_classes = [MultiPartParser, FormParser]
+    queryset = CustomPackUserImage.objects.all()
+    #serializer_class = CustomPackImageSerializer
 
 
 class CustomPackImageDetail(generics.RetrieveUpdateDestroyAPIView):
@@ -45,6 +61,40 @@ class CustomPackImageDetail(generics.RetrieveUpdateDestroyAPIView):
             queryset = CustomPack.objects.filter(
                 custompack__device_id=device_id)
             return queryset
+
+    #serializer_class = CustomPackImageSerializer
+
+
+"""class CustomPackBoxeDetail(generics.RetrieveUpdateAPIView):
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+
+            user = self.request.user
+            queryset = CustomPackBoxe.objects.filter(custompack__user=user)
+            return queryset
+        else:
+            try:
+                device_id = str(self.request.headers['device_id'])
+            except:
+                raise NotFound({"detail": "user not found"})
+            queryset = CustomPackBoxe.objects.filter(
+                custompack__device_id=device_id)
+            return queryset
+    serializer_class = CustomPackBoxeSerializer
+
+    def update(self, request, *args, **kwargs):
+        boxe_id = self.request.data['boxe']
+        boxe = get_object_or_404(Boxe, pk=boxe_id)
+        obj = self.get_object()
+        obj.boxe = boxe
+        obj.save()
+        custompack_boxe = self.get_queryset().filter(id=obj.id).first()
+      
+        serializer = CustomPackBoxeSerializer(custompack_boxe)
+        return Response(serializer.data, status.HTTP_200_OK)
+
+"""
 
 
 class CustomPackList(MethodSerializerView,generics.ListCreateAPIView):
@@ -113,7 +163,7 @@ class CustomPackList(MethodSerializerView,generics.ListCreateAPIView):
 
         serializer = CustomPackSerializer(customPack)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-
+        # return Response (status=status.HTTP_201_CREATED)
 
 
 
@@ -161,6 +211,20 @@ class CustomPackDetail(generics.RetrieveUpdateDestroyAPIView):
                 device_id=guestuser, isCopy=False, inCart=False).first()
             return obj
 
+    def update(self, request, *args, **kwargs):
+        pack_id = self.request.data['pack_id']
+        if pack_id :
+            pack = get_object_or_404(CustomPack,pk=pack_id)
+        else:
+            pack = self.get_object()
+        
+        boxe = get_object_or_404(Boxe, pk=self.request.data['boxe_id'])
+        
+        pack.boxe = boxe
+        pack.save()
+  
+        serializer = CustomPackSerializer(pack)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CustomPackArticleList(generics.CreateAPIView):

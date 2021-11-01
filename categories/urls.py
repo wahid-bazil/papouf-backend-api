@@ -7,7 +7,7 @@ urlpatterns = [
     #Products
     path('product/category-description/<str:slug>', ProductCategoryMiniDetail.as_view()),
     path('product/categories', ProductCateogoriesTree.as_view()),
-    path('product/category-children/<int:pk>', ProductCateogoryChildrenTree.as_view()),
+    path('product/category-children/<str:slug>', ProductCateogoryChildrenTree.as_view()),
     path('product/category-items/<str:slug>' , ProductCategoryItems.as_view()),
     
  
@@ -15,7 +15,7 @@ urlpatterns = [
     #Packs
     path('pack/category-description/<str:slug>', PackCategoryMiniDetail.as_view()),
     path('pack/categories', PackCateogoriesTree.as_view()),
-    path('pack/category-children/<int:pk>', PackCateogoryChildrenTree.as_view()),
+    path('pack/category-children/<str:slug>', PackCateogoryChildrenTree.as_view()),
     path('pack/category-items/<str:slug>' , PackCategoryItems.as_view()),
     path('articles-categories/pack/<str:slug>',PackArticlesCategoriesList.as_view()),
 

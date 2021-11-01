@@ -1,10 +1,10 @@
 from warnings import filters
 from django.db.models import fields
 from django.db.models.base import Model
-from collections.models import Pack
+from products.models import Pack
 from django.contrib.auth import models
 from rest_framework import serializers
-from collections.serializers import PackSerializer, ProductSerializer, ArticleSerializer
+from products.serializers import PackSerializer, ProductSerializer, ArticleSerializer
 from .models import ArticleCategory, Filter, PackCategoryItem, ProductCategory, PackCategory, ProductCategoryItem
 
 
@@ -20,7 +20,7 @@ class ArticleCategoryMiniSerializer(serializers.ModelSerializer):
     images =serializers.SerializerMethodField()
     class Meta :
         model = ArticleCategory
-        fields =['title'  , 'description' ,'images' ,'slug']
+        fields =['title' ,'slug'  , 'description' ,'images' ]
     def get_images(self, obj):
         images =[]
         request = self.context.get('request')
@@ -34,13 +34,13 @@ class ArticleCategorySerializer(serializers.ModelSerializer):
     items = ArticleSerializer(many=True)
     class Meta :
         model = ArticleCategory
-        fields =['title'  , 'description', 'slug' ,'items']
+        fields =['title' ,'slug' , 'description' ,'items']
 
 class ArticleCategoriesTreeSerializer(serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
     class Meta:
         model = ProductCategory
-        fields = ['id','title', 'items','slug' ,'description']
+        fields = ['id','title','slug' ,'items' ,'description']
     def get_items(self, obj):
         all_child = obj.get_children()
         items = []
@@ -58,14 +58,14 @@ class ProductCategoryMiniSerializer(serializers.ModelSerializer):
     filters = filterMiniSerializer(source='filter_set' ,many=True)
     class Meta :
         model = ProductCategory
-        fields = ['id','title', 'description' ,'filters']
+        fields = ['id','title','slug', 'description' ,'filters' ]
 
 class ProductCategorySerializer(serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
     filters = filterMiniSerializer(source='filter_set' ,many=True)
     class Meta:
         model = ProductCategory
-        fields = ['id','title', 'items', 'description' ,'filters']
+        fields = ['id','title','slug' ,'items', 'description' ,'filters' ]
     def get_items(self, obj):
         all_child = obj.get_children()
         items = []
@@ -77,11 +77,11 @@ class ProductCategorySerializer(serializers.ModelSerializer):
                     items.append(item)
         return ProductSerializer(items,many=True).data
 
-class ProductCategoriesTreeSerializer(serializers.ModelSerializer):   # Good one ! ^-^
+class ProductCategoriesTreeSerializer(serializers.ModelSerializer):  
     children=serializers.SerializerMethodField()
     class Meta :
         model =ProductCategory
-        fields = ['id','title','children']
+        fields = ['id','title', 'slug','children' ]
     def get_children(self,obj):
         return ProductCategoriesTreeSerializer(obj.children , many=True).data  
 
@@ -96,7 +96,7 @@ class PackCategoryMiniSerializer(serializers.ModelSerializer):
     filters = filterMiniSerializer(source='filter_set' ,many=True)
     class Meta :
         model = ProductCategory
-        fields = ['id','title', 'description' ,'filters']
+        fields = ['id','title','slug', 'description' ,'filters' ]
 
 
 class PackCategorySerializer(serializers.ModelSerializer):
@@ -104,7 +104,7 @@ class PackCategorySerializer(serializers.ModelSerializer):
     filters = filterMiniSerializer(source='filter_set' ,many=True)
     class Meta:
         model = PackCategory
-        fields = ['id','title', 'items', 'description' ,'filters' ]
+        fields = ['id','title','slug' ,'items', 'description' ,'filters' ]
     
     def get_items(self, obj):
         all_child = obj.get_children()
@@ -123,11 +123,11 @@ class PackCategorySerializer(serializers.ModelSerializer):
         else:
             return PackSerializer(items,many=True).data
 
-class PackCategoriesTreeSerializer(serializers.ModelSerializer):   # Good one ! ^-^
+class PackCategoriesTreeSerializer(serializers.ModelSerializer): 
     children=serializers.SerializerMethodField()
     class Meta :
         model =PackCategory
-        fields = ['id','title','children']
+        fields = ['id','title','slug','children' ]
     def get_children(self,obj):
         return PackCategoriesTreeSerializer(obj.children , many=True).data  
 

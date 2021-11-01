@@ -1,10 +1,10 @@
 
 
-from collections.models import Article
+from products.models import Article
 from cart.models import Cart, CartItem
 from rest_framework import serializers
 from generic_relations.relations import GenericRelatedField
-from collections.serializers import * 
+from products.serializers import * 
 from django.contrib.contenttypes.models import ContentType
 from customization.serializers import CustomPackSerializer,CustomPack
 
@@ -58,4 +58,8 @@ class CartSerializer(serializers.ModelSerializer):
         model = Cart
         fields = ["subtotal","cartitems"]
 
-
+"""class CartinfoSerializer(serializers.ModelSerializer):
+    items = Cart.cartitem_set.all().count()
+    class Meta:
+        model = Cart
+        fields =['subtotal','items']"""

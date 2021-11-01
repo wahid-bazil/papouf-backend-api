@@ -8,14 +8,11 @@ from customization.models import CustomPack, CustomPackArticle, CustomPackUserIm
 from django.db.models import fields
 from rest_framework import serializers
 from generic_relations.relations import GenericRelatedField
-from .models import ArticleImage, PackImage, ProductImage, CustomPackImage
+from .models import ArticleImage, PackImage, ProductImage, BoxeImage, CustomPackImage
 from cart.models import Cart, CartItem
-from collections.models import Article, Pack, Product
+from products.models import Article, Boxe, Pack, Product
 from categories.models import *
 from orders.models import *
-
-
-
 
 
 class ImageProductSerializer(serializers.ModelSerializer):
@@ -29,10 +26,18 @@ class ImageProductSerializer(serializers.ModelSerializer):
         image = productimage.image.url
         return request.build_absolute_uri(image)
 
+
 class ImagePackSerializer(serializers.ModelSerializer):
     class Meta:
         model = PackImage
         fields = ['image']
+
+
+
+
+
+
+
 
 
 class ImageArticleSerializer(serializers.ModelSerializer):
@@ -102,6 +107,11 @@ class ImagesMainCustomPackSerializer(serializers.ModelSerializer):
 
         return images
 
+
+    """def get_images(self, obj):
+        request = self.context.get('request')
+        boxe_images = obj.boxe.images
+     return ImageBoxeSerializer(boxe_images ,many=True ,context={"request": request}).data"""
 
 
 class ImagesProductSerializer(serializers.ModelSerializer):
@@ -286,6 +296,7 @@ class ImagesPackCategorySerializer(serializers.ModelSerializer):
 
 
 # Order
+
 
 class ImagesOrderSerializer(serializers.ModelSerializer):
     cart_images = ImagesCartSerializer(source='cart')

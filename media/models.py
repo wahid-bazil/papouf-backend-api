@@ -2,8 +2,8 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from categories.models import ArticleCategory
-from collections.models import *
-from shipping.models import ShippingBox
+from products.models import *
+from delivery.models import ShippingBox
 # Create your models here.
 
 
@@ -48,6 +48,14 @@ class PackImage (models.Model):
 
     class Meta :
         verbose_name = 'packimage'
+
+
+class BoxeImage (models.Model):
+    image = models.ImageField(
+        _("Image"), upload_to=upload_to, default='posts/default.jpg')
+    item = models.ForeignKey(Boxe,on_delete=models.CASCADE,related_name='images')
+    class Meta :
+        verbose_name = 'boxeimage'
 
 
 class ArticleImage (models.Model):
